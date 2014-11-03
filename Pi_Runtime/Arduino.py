@@ -1,6 +1,8 @@
 from serial import Serial
 import sys
 
+ARDUINO_COMM = Serial()
+
 try:
     if sys.platform.startswith('darwin'):
         ARDUINO_COMM = Serial('/dev/tty.usbmodem1411', 115200)
@@ -9,7 +11,7 @@ try:
     elif sys.platform.startswith('win32'):
         ARDUINO_COMM = Serial("COM1", 115200)
 except OSError:
-    "No serial port."
+    print "No serial port."
 
 def close_serial_port():
     """Closes a serial port at program exit."""
