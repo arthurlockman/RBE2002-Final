@@ -27,21 +27,16 @@ def mouse_daemon(mouse, conn):
 def kill_daemons():
     mouse_d.terminate()
 
-
-def main():
-    """Main program loop."""
-    main_conn, mouse_conn = Pipe()
-    mouse_d = Process(target=mouse_daemon, args=(MOUSE, mouse_conn, ))
-    mouse_d.start()
-    while True:
-        print main_conn.recv()
-
 atexit.register(close_serial_port)
 atexit.register(kill_daemons)
 
 if __name__ == '__main__':
     try:
-        main()
+        main_conn, mouse_conn = Pipe()
+        mouse_d = Process(target=mouse_daemon, args=(MOUSE, mouse_conn, ))
+        mouse_d.start()
+        while True:
+            print main_conn.recv()
     except KeyboardInterrupt:
         print 'Shutting down...'
         exit()
