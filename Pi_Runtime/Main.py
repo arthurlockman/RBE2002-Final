@@ -7,9 +7,10 @@ ARDUINO = Arduino()
 MOUSE = file('/dev/input/mouse0')
 
 
-def read_mouse(mouse, conn):
-    posx = 0
-    posy = 0
+def mouse_daemon(mouse, conn):
+    """A daemon for reading mouse position in the background."""
+    pos_x = long(0)
+    pos_y = long(0)
     while True:
         status, dx, dy = tuple(ord(c) for c in mouse.read(3))
 
@@ -18,9 +19,9 @@ def read_mouse(mouse, conn):
 
         dx = to_signed(dx)
         dy = to_signed(dy)
-        posx += dx
-        posy += dy
-        conn.send([posx, posy])
+        pos_x += dx
+        pos_y += dy
+        conn.send([pos_x, pos_y])
 
 
 def kill_daemons():
@@ -31,7 +32,7 @@ atexit.register(kill_daemons)
 
 if __name__ == '__main__':
     main_conn, mouse_conn = Pipe()
-    mouse_d = Process(target=read_mouse, args=(MOUSE, mouse_conn, ))
+    mouse_d = Process(target=mouse_daemon, args=(MOUSE, mouse_conn, ))
     mouse_d.start()
     while True:
         print main_conn.recv()
