@@ -8,7 +8,8 @@ MOUSE = file('/dev/input/mouse0')
 
 
 def read_mouse(mouse, conn):
-    posx, posy = 0
+    posx = 0
+    posy = 0
     while True:
         status, dx, dy = tuple(ord(c) for c in mouse.read(3))
 
