@@ -8,6 +8,7 @@ MOUSE = file('/dev/input/mouse0')
 
 
 def read_mouse(mouse, conn):
+    posx, posy = 0
     while True:
         status, dx, dy = tuple(ord(c) for c in mouse.read(3))
 
@@ -16,7 +17,9 @@ def read_mouse(mouse, conn):
 
         dx = to_signed(dx)
         dy = to_signed(dy)
-        conn.send([status, dx, dy])
+        posx += dx
+        posy += dy
+        conn.send([status, dx, dy, posx, posy])
 
 
 def kill_daemons():
