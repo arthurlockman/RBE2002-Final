@@ -20,7 +20,7 @@ def read_mouse(mouse, conn):
         dy = to_signed(dy)
         posx += dx
         posy += dy
-        conn.send([status, dx, dy, posx, posy])
+        conn.send([posx, posy])
 
 
 def kill_daemons():
