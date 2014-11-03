@@ -29,4 +29,5 @@ if __name__ == '__main__':
     main_conn, mouse_conn = Pipe()
     mouse_d = Process(target=read_mouse, args=(MOUSE, mouse_conn, ))
     mouse_d.start()
-    print main_conn.recv()
+    while True:
+        print main_conn.recv()
