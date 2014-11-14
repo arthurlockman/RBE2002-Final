@@ -1,20 +1,34 @@
-#include <Robotmap.h>
+#include "Robotmap.h"
 
 Servo m_north, m_west, m_south, m_east;
 
 void setup()
 {
 
-	Serial.begin(9600);
+	Serial.begin(115200);
 
 	initializeMotors();
 
-	testCode();
+	//testCode();
 }
 
 void loop()
 {
-
+  while(Serial.available() > 0)
+  {
+    String command = Serial.readStringUntil('\n');
+    Serial.print("Got command: ");
+    Serial.println(command);
+    if (command == "n") { drive(0); }
+    else if (command == "s") { drive(180); }
+    else if (command == "nw") { drive(315); }
+    else if (command == "ne") { drive(45); }
+    else if (command == "e") { drive(90); }
+    else if (command == "se") { drive(135); }
+    else if (command == "sw") { drive(225); }
+    else if (command == "w") { drive(270); }
+    else if (command == "st") { stopDrive(); }
+  }
 }
 
 void testCode()
@@ -83,6 +97,14 @@ void drive(int degreesFromNorth)
 
 	driveMotors(m_north, m_south, motorSpeedNorthSouth);
 	driveMotors(m_east, m_west, motorSpeedEastWest);
+}
+
+void stopDrive()
+{
+  m_north.write(90);
+  m_west.write(90);
+  m_east.write(90);
+  m_south.write(90);
 }
 
 void driveMotors(Servo a, Servo b, int motorSpeed)

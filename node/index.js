@@ -2,6 +2,19 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var enabled = false;
+var serialConnected = false;
+var SerialPort = require("serialport").SerialPort;
+var serialPort = new SerialPort("/dev/ttyACM0", {
+      baudrate: 115200
+});
+
+serialPort.on("open", function() {
+    console.log("port open");
+    serialConnected = true;
+    serialPort.on('data', function(data) {
+        console.log('data received: ' + data);
+    });
+});
 
 app.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
@@ -13,6 +26,8 @@ io.on('connection', function(socket) {
         console.log("got a command: " + cmd);
         if (cmd == 'stop') {
             stop();
+        } else {
+            drive(cmd);
         }
     });
     socket.on('enable', function(cmd) {
@@ -20,7 +35,7 @@ io.on('connection', function(socket) {
             enabled = true;
             console.log('enabling robot...');
         } else if (cmd == 'disable') {
-            enabled = 'false';
+            enabled = false;
             stop();
             console.log('disabling robot...');
         }
@@ -33,5 +48,13 @@ http.listen(3000, function() {
 
 function stop() {
     console.log('stopping robot...');
+    serialPort.write('st\n');
+}
+
+function drive(direction) {
+    if (enabled) {
+        serialPort.write(direction + '\n');
+        console.log('writing ' + direction);
+    }
 }
 
