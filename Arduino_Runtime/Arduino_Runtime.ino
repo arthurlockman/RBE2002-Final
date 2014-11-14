@@ -33,48 +33,15 @@ void loop()
 
 void testCode()
 {
-	
-	drive(0);
-	delay(1000);
-	decelerate();
-	delay(1000);
 
-	drive(45);
-	delay(1000);
-	decelerate();
-	delay(1000);
-	
+	// Drive in a circle
+	for(int i=0; i<360;i++)
+	{
+		drive(i);
+		delay(7200/360);
+	}
 
-	drive(90);
-	delay(1000);
 	decelerate();
-	delay(1000);
-
-	
-	drive(135);
-	delay(1000);
-	decelerate();
-	delay(1000);
-
-	drive(180);
-	delay(1000);
-	decelerate();
-	delay(1000);
-
-	drive(225);
-	delay(1000);
-	decelerate();
-	delay(1000);
-
-	drive(270);
-	delay(1000);
-	decelerate();
-	delay(1000);
-
-	drive(315);
-	delay(1000);
-	decelerate();
-	delay(1000);
 	
 	
 }
