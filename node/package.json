@@ -1,0 +1,10 @@
+{
+  "name": "The-Last-Airbender-Server",
+  "version": "0.1.0",
+  "description": "The server for The Last Airbender robot.",
+  "dependencies": {
+    "express": "^4.10.2",
+    "serialport": "^1.4.6",
+    "socket.io": "^1.2.0"
+  }
+}
