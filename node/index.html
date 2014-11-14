@@ -1,62 +1,61 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Control Robot</title>
+<head>
+<meta charset="UTF-8">
+<title>Control Robot</title>
 
-        <style>
-            table.center {
-                    margin-left:auto; 
-                        margin-right:auto;
-                            margin-top:auto;
-                                margin-bottom:auto;
-                                  }
-                                  input.button {
-                                        height:100%;
-                                            width:100%;
-                                                -webkit-appearance: none;
-                                                    font-size:300%;
-                                                }
-                                                input.enable {
-                                                        -webkit-appearance:none;
-                                                            height:100%;
-                                                                width:100%;
-                                                                    font-size:300%;
-                                                                }
-                                                            </style>
-                                                        </head>
+<style>
+table.center {
+    margin-left:auto; 
+    margin-right:auto;
+	margin-top:auto;
+	margin-bottom:auto;
+  }
+input.button {
+	height:100%;
+	width:100%;
+	-webkit-appearance: none;
+	font-size:300%;
+}
+input.enable {
+	-webkit-appearance:none;
+	height:100%;
+	width:100%;
+	font-size:300%;
+}
+</style>
+</head>
 
-                                                        <script src="/socket.io/socket.io.js"></script>
-                                                        <script>
-                                                              var socket = io.connect('/');
-                                                          </script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var socket = io.connect('/');
+</script>
 
-                                                          <body>
-                                                              <table border="1" style="height:100%; width:100%; position: absolute; top: 0; bottom: 0; left: 0; right: 0;border:none; text-align:center" >
-                                                                    <tbody>
-                                                                            <tr>
-                                                                                      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NWButtom" value="North West" class="button" style="background-color:#00FFD3"></td>
-                                                                                            <td style="width:33.3%; height:25%"><input type="button" name="button" id="NButton" value="North" class="button" style="background-color:#00FF34"></td>
-                                                                                                  <td style="width:33.3%; height:25%"><input type="button" name="button" id="NEButton" value="North East" class="button" style="background-color:#00FFD3"></td>
-                                                                                                      </tr>
-                                                                                                          <tr>
-                                                                                                                    <td style="width:33.3%; height:25%"><input type="button" name="button" id="WButton" value="West" class="button" style="background-color:#00FF34"></td>
-                                                                                                                          <td style="width:33.3%; height:25%"><input type="button" name="button" id="STOPButton" value="STOP" class="button" style="background-color:#FF0000" onClick="socket.emit('command', 'stop');"></td>
-                                                                                                                                <td style="width:33.3%; height:25%"><input type="button" name="button" id="EButton" value="East" class="button" style="background-color:#00FF34"></td>
-                                                                                                                                    </tr>
-                                                                                                                                        <tr>
-                                                                                                                                                  <td style="width:33.3%; height:25%"><input type="button" name="button" id="SWButton" value="South West" class="button" style="background-color:#00FFD3"></td>
-                                                                                                                                                        <td style="width:33.3%; height:25%"><input type="button" name="button" id="SButton" value="South" class="button" style="background-color:#00FF34"></td>
-                                                                                                                                                              <td style="width:33.3%; height:25%"><input type="button" name="button" id="SEButton" value="South East" class="button" style="background-color:#00FFD3"></td>
-                                                                                                                                                                  </tr>
-                                                                                                                                                                      <tr>
-                                                                                                                                                                                <td style="width:33.3%; height:25%"><input type="button" name="button" id="Enable" value="Enable" class="enable" style="background-color:#FFF600"></td>
-                                                                                                                                                                                      <td style="width:33.3%; height:25%"><input type="button" name="button" id="Disable" value="Disable" class="enable"></td>
-                                                                                                                                                                                            <td style="width:33.3%; height:25%"><input type="button" name="button" id="UNUSED" value="unused" class="enable"></td>
-                                                                                                                                                                                                </tr>
-                                                                                                                                                                                                  </tbody>
-                                                                                                                                                                                              </table>
+<body>
+<table border="1" style="height:100%; width:100%; position: absolute; top: 0; bottom: 0; left: 0; right: 0;border:none; text-align:center" >
+  <tbody>
+    <tr>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NWButtom" value="North West" class="button" style="background-color:#00FFD3"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NButton" value="North" class="button" style="background-color:#00FF34"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NEButton" value="North East" class="button" style="background-color:#00FFD3"></td>
+    </tr>
+    <tr>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="WButton" value="West" class="button" style="background-color:#00FF34"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="STOPButton" value="STOP" class="button" style="background-color:#FF0000" onClick="socket.emit('command', 'stop');"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="EButton" value="East" class="button" style="background-color:#00FF34"></td>
+    </tr>
+    <tr>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SWButton" value="South West" class="button" style="background-color:#00FFD3"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SButton" value="South" class="button" style="background-color:#00FF34"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SEButton" value="South East" class="button" style="background-color:#00FFD3"></td>
+    </tr>
+    <tr>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="Enable" value="Enable" class="enable" style="background-color:#FFF600"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="Disable" value="Disable" class="enable"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="UNUSED" value="unused" class="enable"></td>
+    </tr>
+  </tbody>
+</table>
 
-                                                                                                                                                                                          </body>
-                                                                                                                                                                                      </html>
-
+</body>
+</html>
