@@ -1,6 +1,7 @@
 #include "Robotmap.h"
 
 Servo m_north, m_west, m_south, m_east;
+boolean enabled = false;
 
 void setup()
 {
@@ -29,6 +30,8 @@ void loop()
     else if (command == "w") { drive(270); }
     else if (command == "st") { stopDrive(); }
     else if (command == "sp") { spin(1); }
+    else if (command == "en") { enabled = true; }
+    else if (command == "ds") { enabled = false; }
   }
 }
 

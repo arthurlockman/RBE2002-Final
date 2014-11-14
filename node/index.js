@@ -33,10 +33,12 @@ io.on('connection', function(socket) {
     socket.on('enable', function(cmd) {
         if (cmd == 'enable') {
             enabled = true;
+            serialPort.write('en\n');
             console.log('enabling robot...');
         } else if (cmd == 'disable') {
             enabled = false;
             stop();
+            serialPort.write('ds\n');
             console.log('disabling robot...');
         }
     });
