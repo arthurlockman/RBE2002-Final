@@ -28,6 +28,7 @@ void loop()
     else if (command == "sw") { drive(225); }
     else if (command == "w") { drive(270); }
     else if (command == "st") { stopDrive(); }
+    else if (command == "sp") { spin(1); }
   }
 }
 
@@ -72,6 +73,24 @@ void stopDrive()
   m_west.write(90);
   m_east.write(90);
   m_south.write(90);
+}
+
+void spin(int left)
+{
+    if (left == 1)
+    {
+        m_north.write(40);
+        m_east.write(40);
+        m_west.write(40);
+        m_south.write(40);
+    }
+    else if (left == 0)
+    {
+        m_north.write(140);
+        m_east.write(140);
+        m_west.write(140);
+        m_south.write(140);
+    }
 }
 
 void driveMotors(Servo a, Servo b, int motorSpeed)

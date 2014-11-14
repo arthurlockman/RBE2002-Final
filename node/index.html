@@ -52,7 +52,7 @@ input.enable {
     <tr>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="Enable" value="Enable" class="enable" style="background-color:#FFF600" onClick="socket.emit('enable', 'enable');"></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="Disable" value="Disable" class="enable" onClick="socket.emit('enable', 'disable');"></td>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="UNUSED" value="unused" class="enable"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="UNUSED" value="Spin" class="enable" onClick="socket.emit('command', 'sp')"></td>
     </tr>
   </tbody>
 </table>
