@@ -5,11 +5,8 @@ boolean enabled = false;
 
 void setup()
 {
-
 	Serial.begin(115200);
-
 	initializeMotors();
-
 	//testCode();
 }
 
@@ -35,19 +32,21 @@ void loop()
   }
 }
 
+void printToConsole(String message)
+{
+    String command = "cons:" + message;
+    Serial.println(command);
+}
+
 void testCode()
 {
-
 	// Drive in a circle
 	for(int i=0; i<360;i++)
 	{
 		drive(i);
 		delay(7200/360);
 	}
-
 	decelerate();
-	
-	
 }
 
 void initializeMotors()
