@@ -34,6 +34,7 @@ input.enable {
 <script>
   var socket = io.connect('/');
   socket.on('console', function(msg) {
+      console.log(msg);
 	  $('#console').append($('<li>').text(msg));
   });
 </script>
