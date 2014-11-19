@@ -14,7 +14,7 @@ serialPort.on("open", function() {
     serialPort.on('data', function(data) {
         console.log('data received: ' + data);
         if (data.toString().substring(0, 4) == "cons:") {
-            socket.emit('console', data.toString().substring(5));
+            io.emit('console', data.toString().substring(5));
             console.log("console: " + data.toString().substring(5));
         }
     });
