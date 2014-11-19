@@ -23,16 +23,24 @@ input.enable {
 	width:100%;
 	font-size:300%;
 }
+#console { list-style-type: none; margin: 0; padding: 0; }
+#console li { padding: 5px 10px; }
+#console li:nth-child(odd) { background: #eee; }
 </style>
 </head>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
   var socket = io.connect('/');
+  socket.on('console', function(msg) {
+	  $('#console').append($('<li>').text(msg));
+  });
 </script>
 
 <body>
-<table border="1" style="height:100%; width:100%; position: absolute; top: 0; bottom: 0; left: 0; right: 0;border:none; text-align:center" >
+<ul id="console" style="height:25%; width:100%; position: absolute; top: 0; bottom: 25%; left: 0; right: 0; overflow-x: auto; overflow-y: auto;"></ul>
+<table border="1" style="height:75%%; width:100%; position: absolute; top: 25%; bottom: 0; left: 0; right: 0;border:none; text-align:center" >
   <tbody>
     <tr>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="NWButtom" value="North West" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'nw');"></td>
