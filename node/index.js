@@ -13,8 +13,9 @@ serialPort.on("open", function() {
     serialConnected = true;
     serialPort.on('data', function(data) {
         console.log('data received: ' + data);
-        if (data.substring(0, 4) == "cons:") {
-            socket.emit('console', data.substring(5));
+        if (data.toString().substring(0, 4) == "cons:") {
+            socket.emit('console', data.toString().substring(5));
+            console.log("console: " + data.toString().substring(5));
         }
     });
 });
