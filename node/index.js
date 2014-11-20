@@ -7,6 +7,7 @@ var SerialPort = require("serialport").SerialPort;
 var serialPort = new SerialPort("/dev/ttyACM0", {
       baudrate: 115200
 });
+var moment = require('moment');
 
 serialPort.on("open", function() {
     console.log("port open");
@@ -14,11 +15,17 @@ serialPort.on("open", function() {
     serialPort.on('data', function(data) {
         //console.log('data received: ' + data);
         if (data.toString().substring(0, 5) == "cons:") {
-            io.emit('console', data.toString().substring(5).replace(/\r?\n/g, ""));
-            console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
+            writeToConsole(data.toString().substring(5).replace(/\r?\n/g, ""));
+            //io.emit('console', moment().format("h:mm:ss a") + ": " + data.toString().substring(5).replace(/\r?\n/g, ""));
+            //console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
         }
     });
 });
+
+function writeToConsole(message) {
+    io.emit('console', moment().format("h:mm:ss a") + ": " + message);
+    console.log(moment().format("h:mm:ss a") + ": " +message);
+}
 
 app.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
