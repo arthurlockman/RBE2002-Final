@@ -28,18 +28,17 @@ input.enable {
 #console li:nth-child(odd) { background: #eee; }
 </style>
 </head>
-
+<body>
 <script src="/socket.io/socket.io.js"></script>
 <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
   var socket = io.connect('/');
   socket.on('console', function(msg) {
-      console.log(msg);
+      console.log("got message");
 	  $('#console').append($('<li>').text(msg));
   });
 </script>
 
-<body>
 <ul id="console" style="height:25%; width:100%; position: absolute; top: 0; bottom: 25%; left: 0; right: 0; overflow-x: auto; overflow-y: auto;"></ul>
 <table border="1" style="height:75%%; width:100%; position: absolute; top: 25%; bottom: 0; left: 0; right: 0;border:none; text-align:center" >
   <tbody>

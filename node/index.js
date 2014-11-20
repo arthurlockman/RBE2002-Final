@@ -12,10 +12,10 @@ serialPort.on("open", function() {
     console.log("port open");
     serialConnected = true;
     serialPort.on('data', function(data) {
-        console.log('data received: ' + data);
-        if (data.toString().substring(0, 4) == "cons:") {
-            io.emit('console', data.toString().substring(5));
-            console.log("console: " + data.toString().substring(5));
+        //console.log('data received: ' + data);
+        if (data.toString().substring(0, 5) == "cons:") {
+            io.emit('console', data.toString().substring(5).replace(/\r?\n/g, ""));
+            console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
         }
     });
 });
@@ -26,6 +26,7 @@ app.get('/', function(req, res) {
 
 io.on('connection', function(socket) {
     console.log('a user connected');
+    io.emit('console', 'hello user!');
     socket.on('command', function(cmd) {
         console.log("got a command: " + cmd);
         if (cmd == 'stop') {

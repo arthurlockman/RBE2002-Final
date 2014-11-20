@@ -16,8 +16,6 @@ void loop()
   while(Serial.available() > 0)
   {
     String command = Serial.readStringUntil('\n');
-    Serial.print("Got command: ");
-    Serial.println(command);
     printToConsole(command);
     if (command == "n") { drive(0); }
     else if (command == "s") { drive(180); }
