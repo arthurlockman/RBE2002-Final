@@ -54,6 +54,12 @@ io.on('connection', function(socket) {
             console.log('disabling robot...');
         }
     });
+    socket.on('disconnect', function() {
+        console.log('Controller disconnected. Disabling...');
+        stop();
+        enabled = false;
+        serialPort.write('ds\n');
+    });
 });
 
 http.listen(3000, function() {
