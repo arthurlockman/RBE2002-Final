@@ -3,16 +3,14 @@
 // #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
 
-Servo    m_north, m_west, m_south, m_east;
-boolean  enabled = false;
-
-Encoder  m_encoderNorth(kNorthEncoderA, kNorthEncoderB);
-Encoder  m_encoderWest(kWestEncoderA, kWestEncoderB);
-Encoder  m_encoderEast(kEastEncoderA, kEastEncoderA);
-Encoder  m_encoderSouth(kSouthEncoderA, kSouthEncoderA);
-
-LSM303   m_compass;
-L3G      m_gyro;
+Servo          m_north, m_west, m_south, m_east;
+boolean        enabled = false;
+Encoder        m_encoderNorth(kNorthEncoderA, kNorthEncoderB);
+Encoder        m_encoderWest(kWestEncoderA, kWestEncoderB);
+SingleEncoder  m_encoderEast(kEastEncoderA);
+SingleEncoder  m_encoderSouth(kSouthEncoderA);
+LSM303         m_compass;
+L3G            m_gyro;
 
 void setup()
 {
@@ -34,6 +32,10 @@ void setup()
         while (1);
     }
     m_gyro.enableDefault();
+
+    //Attach interrupt for speed-only encoders
+    attachInterrupt(m_encoderEast.interruptPin, updateEastEncoder, CHANGE);
+    attachInterrupt(m_encoderSouth.interruptPin, updateSouthEncoder, CHANGE);
 }
 
 void loop()
@@ -96,6 +98,16 @@ void loop()
     printDebuggingMessages();
 }
 
+void updateEastEncoder()
+{
+    m_encoderEast.update(eastDirection);
+}
+
+void updateSouthEncoder()
+{
+    m_encoderSouth.update(southDirection);
+}
+
 void printToConsole(String message)
 {
     String command = "cons:" + message;
@@ -152,13 +164,16 @@ void initializeMotors()
 
 void drive(int degreesFromNorth)
 {
-    String msg = "Driving at heading " + degreesFromNorth;
-    printToConsole(msg);
-
     currentHeading = degreesFromNorth;
 
     int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
     int motorSpeedEastWest = calcMotorSpeedEastWest(driveSpeed);
+
+    //Set directions for encoders
+    if (motorSpeedNorthSouth < 90) southDirection = 0;
+    else southDirection = 1;
+    if (motorSpeedEastWest < 90) eastDirection = 0;
+    else eastDirection = 1;
 
     driveMotors(m_north, m_south, motorSpeedNorthSouth);
     driveMotors(m_east, m_west, motorSpeedEastWest);
@@ -207,6 +222,11 @@ void decelerate()
     {
         int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(i);
         int motorSpeedEastWest =  calcMotorSpeedEastWest(i);
+
+        if (motorSpeedNorthSouth < 90) southDirection = 0;
+        else southDirection = 1;
+        if (motorSpeedEastWest < 90) eastDirection = 0;
+        else eastDirection = 1;
 
         driveMotors(m_north, m_south, motorSpeedNorthSouth);
         driveMotors(m_east, m_west, motorSpeedEastWest);
