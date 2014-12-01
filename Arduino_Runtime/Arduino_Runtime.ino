@@ -1,17 +1,45 @@
 #include "Robotmap.h"
 
-Servo m_north, m_west, m_south, m_east;
-boolean enabled = false;
+// #define DEBUG //Comment out to disable debug messages.
+// #define TESTING //Comment out to disable testing.
+
+Servo    m_north, m_west, m_south, m_east;
+boolean  enabled = false;
+
+Encoder  m_encoderNorth(kNorthEncoderA, kNorthEncoderB);
+Encoder  m_encoderWest(kWestEncoderA, kWestEncoderB);
+Encoder  m_encoderEast(kEastEncoderA, kEastEncoderA);
+Encoder  m_encoderSouth(kSouthEncoderA, kSouthEncoderA);
+
+LSM303   m_compass;
+L3G      m_gyro;
 
 void setup()
 {
     Serial.begin(115200);
     initializeMotors();
-    //testCode();
+    testCode();
+    
+    // Initialize Compass
+    Wire.begin();
+    m_compass.init();
+    m_compass.enableDefault();
+    m_compass.m_min = (LSM303::vector<int16_t>){-1748,  -1899,  -2515};
+    m_compass.m_max = (LSM303::vector<int16_t>){+1909,  +1794,  +1076};
+
+    //Initialize gyro
+    if (!m_gyro.init())
+    {
+        Serial.println("Failed to autodetect gyro type!");
+        while (1);
+    }
+    m_gyro.enableDefault();
 }
 
 void loop()
 {
+    m_compass.read();
+
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -65,6 +93,7 @@ void loop()
             enabled = false;
         }
     }
+    printDebuggingMessages();
 }
 
 void printToConsole(String message)
@@ -73,15 +102,43 @@ void printToConsole(String message)
     Serial.println(command);
 }
 
+void printDebuggingMessages()
+{
+    #if defined(DEBUG)
+        float heading = m_compass.heading();
+        Serial.print(m_encoderNorth.read());
+        Serial.print('\t');
+        Serial.print(m_encoderWest.read());
+        Serial.print('\t');
+        Serial.print(m_encoderSouth.read());
+        Serial.print('\t');
+        Serial.print(m_encoderEast.read());
+        Serial.print('\t');
+        Serial.print(heading);
+        Serial.print('\t');
+        m_gyro.read();
+        Serial.print("G ");
+        Serial.print("X: ");
+        Serial.print((int)m_gyro.g.x);
+        Serial.print(" Y: ");
+        Serial.print((int)m_gyro.g.y);
+        Serial.print(" Z: ");
+        Serial.println((int)m_gyro.g.z);
+        delay(100);
+    #endif
+}
+
 void testCode()
 {
-    // Drive in a circle
-    for (int i = 0; i < 360; i++)
-    {
-        drive(i);
-        delay(7200 / 360);
-    }
-    decelerate();
+    #if defined(TESTING)
+        // Drive in a circle
+        for (int i = 0; i < 360; i++)
+        {
+            drive(i);
+            delay(7200 / 360);
+        }
+        decelerate();
+    #endif
 }
 
 void initializeMotors()
@@ -95,6 +152,9 @@ void initializeMotors()
 
 void drive(int degreesFromNorth)
 {
+    String msg = "Driving at heading " + degreesFromNorth;
+    printToConsole(msg);
+
     currentHeading = degreesFromNorth;
 
     int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
