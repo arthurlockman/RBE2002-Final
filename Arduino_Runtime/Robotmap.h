@@ -75,13 +75,13 @@ int northSetpoint;
 int westSetpoint;
 int southSetpoint;
 int eastSetpoint;
-volatile int northSpeed;
-volatile int westSpeed;
-volatile int southSpeed;
-volatile int eastSpeed;
+volatile float northSpeed;
+volatile float westSpeed;
+volatile float southSpeed;
+volatile float eastSpeed;
 static const int kQuadEncTicksPerRev = 360;
 static const int kSingleEncTicksPerRev = 360;
-static const int kEncoderISRRate = 10000;
+static const int kEncoderISRRate = 100000;
 static const int kEncoderISRMillis = kEncoderISRRate / 1000;
 
 //Position things

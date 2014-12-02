@@ -1,6 +1,6 @@
 #include "Robotmap.h"
 
-// #define DEBUG //Comment out to disable debug messages.
+#define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
 
 Servo          m_north, m_west, m_south, m_east;
@@ -150,13 +150,13 @@ void printDebuggingMessages()
 {
     #if defined(DEBUG)
         float heading = m_compass.heading();
-        Serial.print(m_encoderNorth.read());
+        Serial.print(northSpeed);
         Serial.print('\t');
-        Serial.print(m_encoderWest.read());
+        Serial.print(westSpeed);
         Serial.print('\t');
-        Serial.print(m_encoderSouth.read());
+        Serial.print(southSpeed);
         Serial.print('\t');
-        Serial.print(m_encoderEast.read());
+        Serial.print(eastSpeed);
         Serial.print('\t');
         Serial.print(heading);
         Serial.print('\t');
