@@ -10,6 +10,7 @@
 #include <Wire.h>
 #include "TimerOne.h"
 #include "Ultrasonic.h"
+#include "LightSensor.h"
 
 enum MotorPins
 {
@@ -86,6 +87,9 @@ static const int kEncoderISRMillis = kEncoderISRRate / 1000;
 //Position things
 volatile long northSouthPosition = 0;
 volatile long eastWestPosition   = 0;
+
+//Sensor Constants
+static const int kLightSensorThresh = 500;
 
 /**
  * @brief Applies a deadband to a number.

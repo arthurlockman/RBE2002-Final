@@ -15,6 +15,10 @@ Ultrasonic     m_rangeNorth(kNorthRangeOut, kNorthRangeIn);
 Ultrasonic     m_rangeWest(kWestRangeOut, kWestRangeIn);
 Ultrasonic     m_rangeSouth(kSouthRangeOut, kSouthRangeIn);
 Ultrasonic     m_rangeEast(kEastRangeIn, kEastRangeOut);
+LightSensor    m_lightNorth(kLightSensorNorth, kLightSensorThresh);
+LightSensor    m_lightWest(kLightSensorWest, kLightSensorThresh);
+LightSensor    m_lightSouth(kLightSensorSouth, kLightSensorThresh);
+LightSensor    m_lightEast(kLightSensorEast, kLightSensorThresh);
 
 void setup()
 {
