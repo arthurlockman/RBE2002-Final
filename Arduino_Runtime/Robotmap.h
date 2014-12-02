@@ -9,6 +9,7 @@
 #include "SingleEncoder.h"
 #include <Wire.h>
 #include "TimerOne.h"
+#include "Ultrasonic.h"
 
 enum MotorPins
 {
@@ -38,7 +39,14 @@ enum InterruptPins
 
 enum DigitalPins
 {
-
+	kNorthRangeOut = 1,
+	kNorthRangeIn  = 2,
+	kWestRangeOut  = 3,
+	kWestRangeIn   = 4,
+	kSouthRangeOut = 5,
+	kSouthRangeIn  = 6,
+	kEastRangeOut  = 7,
+	kEastRangeIn   = 8
 };
 
 enum AnalogPins

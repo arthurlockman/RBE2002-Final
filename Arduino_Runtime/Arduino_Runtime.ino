@@ -11,6 +11,10 @@ SingleEncoder  m_encoderEast(kEastEncoderA);
 SingleEncoder  m_encoderSouth(kSouthEncoderA);
 LSM303         m_compass;
 L3G            m_gyro;
+Ultrasonic     m_rangeNorth(kNorthRangeOut, kNorthRangeIn);
+Ultrasonic     m_rangeWest(kWestRangeOut, kWestRangeIn);
+Ultrasonic     m_rangeSouth(kSouthRangeOut, kSouthRangeIn);
+Ultrasonic     m_rangeEast(kEastRangeIn, kEastRangeOut);
 
 void setup()
 {
