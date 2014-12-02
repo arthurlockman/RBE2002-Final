@@ -122,22 +122,27 @@ void updateSouthEncoder()
 
 void updateISR()
 {
-    northSouthPosition += m_encoderNorth.read();
-    eastWestPosition += m_encoderWest.read();
+    long northCurrent = m_encoderNorth.read();
+    long westCurrent = m_encoderWest.read();
+    long southCurrent = m_encoderSouth.read();
+    long eastCurrent = m_encoderEast.read();
 
-    northSpeed = CalculateEncoderSpeed(m_encoderNorth.read(),
+    northSouthPosition += northCurrent - northLast;
+    eastWestPosition += westCurrent - westLast;
+
+    northSpeed = CalculateEncoderSpeed(northCurrent - northLast,
         kEncoderISRMillis, kQuadEncTicksPerRev);
-    westSpeed  = CalculateEncoderSpeed(m_encoderWest.read(),
+    westSpeed  = CalculateEncoderSpeed(westCurrent - westLast,
         kEncoderISRMillis, kQuadEncTicksPerRev);
-    southSpeed = CalculateEncoderSpeed(m_encoderSouth.read(),
+    southSpeed = CalculateEncoderSpeed(southCurrent - southLast,
         kEncoderISRMillis, kSingleEncTicksPerRev);
-    eastSpeed  = CalculateEncoderSpeed(m_encoderEast.read(),
+    eastSpeed  = CalculateEncoderSpeed(eastCurrent - eastLast,
         kEncoderISRMillis, kSingleEncTicksPerRev);
 
-    m_encoderNorth.write(0);
-    m_encoderWest.write(0);
-    m_encoderSouth.write(0);
-    m_encoderEast.write(0);
+    northLast = northCurrent;
+    westLast = westCurrent;
+    southLast = southCurrent;
+    eastLast = eastCurrent;
 }
 
 void printToConsole(String message)
@@ -175,13 +180,7 @@ void printDebuggingMessages()
 void testCode()
 {
     #if defined(TESTING)
-        // Drive in a circle
-        for (int i = 0; i < 360; i++)
-        {
-            drive(i);
-            delay(7200 / 360);
-        }
-        decelerate();
+        drive(0);
     #endif
 }
 

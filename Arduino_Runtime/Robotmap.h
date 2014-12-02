@@ -40,22 +40,22 @@ enum InterruptPins
 
 enum DigitalPins
 {
-	kNorthRangeOut = 1,
-	kNorthRangeIn  = 2,
-	kWestRangeOut  = 3,
-	kWestRangeIn   = 4,
-	kSouthRangeOut = 5,
-	kSouthRangeIn  = 6,
-	kEastRangeOut  = 7,
-	kEastRangeIn   = 8
+	kNorthRangeOut = 22,
+	kNorthRangeIn  = 23,
+	kWestRangeOut  = 24,
+	kWestRangeIn   = 25,
+	kSouthRangeOut = 26,
+	kSouthRangeIn  = 27,
+	kEastRangeOut  = 28,
+	kEastRangeIn   = 29
 };
 
 enum AnalogPins
 {
-	kLightSensorNorth = 0,
-	kLightSensorWest  = 1,
-	kLightSensorSouth = 2,
-	kLightSensorEast  = 3
+	kLightSensorWest  = 0,
+	kLightSensorSouth = 1,
+	kLightSensorEast  = 2,
+	kLightSensorNorth = 11
 };
 
 // Number between 0 and 90
@@ -79,9 +79,13 @@ volatile float northSpeed;
 volatile float westSpeed;
 volatile float southSpeed;
 volatile float eastSpeed;
+volatile long northLast;
+volatile long westLast;
+volatile long southLast;
+volatile long eastLast;
 static const int kQuadEncTicksPerRev = 360;
-static const int kSingleEncTicksPerRev = 360;
-static const int kEncoderISRRate = 100000;
+static const int kSingleEncTicksPerRev = 180;
+static const int kEncoderISRRate = 1000000;
 static const int kEncoderISRMillis = kEncoderISRRate / 1000;
 
 //Position things
@@ -114,7 +118,7 @@ inline T Deadband(T value, T deadbandUpper, T deadbandLower, T deadbandMid)
 inline float CalculateEncoderSpeed(int ticks, int dT, int ticksPerRev)
 {
 	// (revs per tick) * (ticks per unit time) * (unit time per minute)
-	return (1.0 / (float)ticksPerRev) * ((float)ticks / (float)dT) * (60.0);
+	return (1.0 / (float)ticksPerRev) * ((float)ticks / (float)dT) * (60000);
 };
 
 #endif

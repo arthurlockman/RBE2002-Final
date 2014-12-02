@@ -23,7 +23,7 @@ void SingleEncoder::update(int dir)
 {
 	if (dir == 1)
 		position++;
-	else if (dir == 0);
+	else if (dir == 0)
 		position--;
 }
 
