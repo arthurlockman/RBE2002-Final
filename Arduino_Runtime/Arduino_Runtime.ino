@@ -25,7 +25,7 @@ void setup()
     m_compass.m_min = (LSM303::vector<int16_t>){-1748,  -1899,  -2515};
     m_compass.m_max = (LSM303::vector<int16_t>){+1909,  +1794,  +1076};
 
-    //Initialize gyro
+    // Initialize gyro
     if (!m_gyro.init())
     {
         Serial.println("Failed to autodetect gyro type!");
@@ -33,9 +33,13 @@ void setup()
     }
     m_gyro.enableDefault();
 
-    //Attach interrupt for speed-only encoders
+    // Attach interrupt for speed-only encoders
     attachInterrupt(m_encoderEast.interruptPin, updateEastEncoder, CHANGE);
     attachInterrupt(m_encoderSouth.interruptPin, updateSouthEncoder, CHANGE);
+
+    // Initialize ISR
+    Timer1.initialize(kEncoderISRRate);
+    Timer1.attachInterrupt(updateISR);
 }
 
 void loop()
@@ -106,6 +110,26 @@ void updateEastEncoder()
 void updateSouthEncoder()
 {
     m_encoderSouth.update(southDirection);
+}
+
+void updateISR()
+{
+    northSouthPosition += m_encoderNorth.read();
+    eastWestPosition += m_encoderWest.read();
+
+    northSpeed = CalculateEncoderSpeed(m_encoderNorth.read(),
+        kEncoderISRMillis, kQuadEncTicksPerRev);
+    westSpeed  = CalculateEncoderSpeed(m_encoderWest.read(),
+        kEncoderISRMillis, kQuadEncTicksPerRev);
+    southSpeed = CalculateEncoderSpeed(m_encoderSouth.read(),
+        kEncoderISRMillis, kSingleEncTicksPerRev);
+    eastSpeed  = CalculateEncoderSpeed(m_encoderEast.read(),
+        kEncoderISRMillis, kSingleEncTicksPerRev);
+
+    m_encoderNorth.write(0);
+    m_encoderWest.write(0);
+    m_encoderSouth.write(0);
+    m_encoderEast.write(0);
 }
 
 void printToConsole(String message)

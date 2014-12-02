@@ -66,6 +66,18 @@ int northSetpoint;
 int westSetpoint;
 int southSetpoint;
 int eastSetpoint;
+volatile int northSpeed;
+volatile int westSpeed;
+volatile int southSpeed;
+volatile int eastSpeed;
+static const int kQuadEncTicksPerRev = 360;
+static const int kSingleEncTicksPerRev = 360;
+static const int kEncoderISRRate = 10000;
+static const int kEncoderISRMillis = kEncoderISRRate / 1000;
+
+//Position things
+volatile long northSouthPosition = 0;
+volatile long eastWestPosition   = 0;
 
 /**
  * @brief Applies a deadband to a number.
