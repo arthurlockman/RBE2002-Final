@@ -2,10 +2,12 @@
 
 // #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
-#define IMU //Comment out to disable IMU
+// #define IMU //Comment out to disable IMU
+// #define DRIVE_PID //Comment out to disable Drive PID
 
 Servo          m_north, m_west, m_south, m_east;
 boolean        enabled = false;
+boolean        m_stopped = true;
 SingleEncoder  m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
 SingleEncoder  m_encoderWest(kWestEncoderA, kSingleEncTicksPerRev);
 SingleEncoder  m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
@@ -26,23 +28,29 @@ void setup()
     Serial.begin(115200);
     initializeMotors();
     testCode();
-    
-    #if defined(IMU)
-        // Initialize Compass
-        Wire.begin();
-        m_compass.init();
-        m_compass.enableDefault();
-        m_compass.m_min = (LSM303::vector<int16_t>){-1748,  -1899,  -2515};
-        m_compass.m_max = (LSM303::vector<int16_t>){+1909,  +1794,  +1076};
 
-        // Initialize gyro
-        if (!m_gyro.init())
-        {
-            Serial.println("Failed to autodetect gyro type!");
-            while (1);
-        }
-        m_gyro.enableDefault();
-    #endif
+#if defined(IMU)
+    // Initialize Compass
+    Wire.begin();
+    m_compass.init();
+    m_compass.enableDefault();
+    m_compass.m_min = (LSM303::vector<int16_t>)
+    {
+        -1748,  -1899,  -2515
+    };
+    m_compass.m_max = (LSM303::vector<int16_t>)
+    {
+        +1909,  +1794,  +1076
+    };
+
+    // Initialize gyro
+    if (!m_gyro.init())
+    {
+        Serial.println("Failed to autodetect gyro type!");
+        while (1);
+    }
+    m_gyro.enableDefault();
+#endif
 
     // Attach interrupt for speed-only encoders
     attachInterrupt(m_encoderEast.interruptPin, updateEastEncoder, CHANGE);
@@ -57,9 +65,11 @@ void setup()
     pinMode(kFanEast, OUTPUT);
     setFans(0);
 
+#if defined(DRIVE_PID)
     //Setup timer interrupts
     Timer1.initialize(kISRRate);
     Timer1.attachInterrupt(periodicUpdate);
+#endif
 }
 
 void loop()
@@ -119,6 +129,7 @@ void loop()
     }
     printDebuggingMessages();
     imuRoutine();
+    updateDrive();
 }
 
 void updateEastEncoder()
@@ -149,43 +160,43 @@ void printToConsole(String message)
 
 void printDebuggingMessages()
 {
-    #if defined(DEBUG)
-        float heading = m_compass.heading();
-        Serial.print(m_encoderNorth.speed());
-        Serial.print('\t');
-        Serial.print(m_encoderWest.speed());
-        Serial.print('\t');
-        Serial.print(m_encoderSouth.speed());
-        Serial.print('\t');
-        Serial.print(m_encoderEast.speed());
-        Serial.print('\t');
-        Serial.print(heading);
-        Serial.print('\t');
-        Serial.print("G ");
-        Serial.print("X: ");
-        Serial.print((int)m_gyro.g.x);
-        Serial.print(" Y: ");
-        Serial.print((int)m_gyro.g.y);
-        Serial.print(" Z: ");
-        Serial.print((int)m_gyro.g.z);
-        Serial.println();
-        delay(100);
-    #endif
+#if defined(DEBUG)
+    float heading = m_compass.heading();
+    Serial.print(m_encoderNorth.speed());
+    Serial.print('\t');
+    Serial.print(m_encoderWest.speed());
+    Serial.print('\t');
+    Serial.print(m_encoderSouth.speed());
+    Serial.print('\t');
+    Serial.print(m_encoderEast.speed());
+    Serial.print('\t');
+    Serial.print(heading);
+    Serial.print('\t');
+    Serial.print("G ");
+    Serial.print("X: ");
+    Serial.print((int)m_gyro.g.x);
+    Serial.print(" Y: ");
+    Serial.print((int)m_gyro.g.y);
+    Serial.print(" Z: ");
+    Serial.print((int)m_gyro.g.z);
+    Serial.println();
+    delay(100);
+#endif
 }
 
 void testCode()
 {
-    #if defined(TESTING)
-        drive(225);
-    #endif
+#if defined(TESTING)
+    drive(225);
+#endif
 }
 
 void imuRoutine()
 {
-    #if defined(IMU)
-        m_compass.read();
-        m_gyro.read();
-    #endif
+#if defined(IMU)
+    m_compass.read();
+    m_gyro.read();
+#endif
 }
 
 void initializeMotors()
@@ -198,6 +209,25 @@ void initializeMotors()
 
 void drive(int degreesFromNorth)
 {
+    m_stopped = false;
+#if defined(DRIVE_PID)
+    //Do PID Drive
+    currentHeading = degreesFromNorth;
+
+    int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
+    int motorSpeedEastWest = calcMotorSpeedEastWest(driveSpeed);
+
+    //Set directions for encoders
+    if (motorSpeedNorthSouth < 90) southDirection = 1;
+    else southDirection = 0;
+    if (motorSpeedEastWest < 90) eastDirection = 0;
+    else eastDirection = 1;
+
+    northSetpoint = motorSpeedNorthSouth;
+    westSetpoint  = motorSpeedEastWest;
+    southSetpoint = motorSpeedNorthSouth;
+    eastSetpoint  = motorSpeedEastWest;
+#else
     currentHeading = degreesFromNorth;
 
     int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
@@ -211,14 +241,33 @@ void drive(int degreesFromNorth)
 
     driveMotors(m_north, m_south, motorSpeedNorthSouth);
     driveMotors(m_east, m_west, motorSpeedEastWest);
+#endif
+}
+
+void updateDrive()
+{
+#if defined(DRIVE_PID)
+    m_north.write(180 - ((northSpeed < 0) ? northSpeed + 180 : northSpeed));
+    m_south.write(((southSpeed < 0) ? southSpeed + 180 : southSpeed));
+    m_east.write(180 - ((eastSpeed < 0) ? eastSpeed + 180 : eastSpeed));
+    m_west.write(((westSpeed < 0) ? westSpeed + 180 : westSpeed));
+#endif
 }
 
 void stopDrive()
 {
+#if defined(DRIVE_PID)
+    northSetpoint = 0;
+    westSetpoint = 0;
+    eastSetpoint = 0;
+    southSetpoint = 0;
+    m_stopped = true;
+#else
     m_north.write(90);
     m_west.write(90);
     m_east.write(90);
     m_south.write(90);
+#endif
 }
 
 void spin(int left)
@@ -291,40 +340,58 @@ void setFans(int fan)
 {
     switch (fan)
     {
-        case 0:
-            digitalWrite(kFanNorth, LOW);
-            digitalWrite(kFanWest, LOW);
-            digitalWrite(kFanSouth, LOW);
-            digitalWrite(kFanEast, LOW);
-            break;
-        case 1:
-            digitalWrite(kFanNorth, HIGH);
-            digitalWrite(kFanWest, LOW);
-            digitalWrite(kFanSouth, LOW);
-            digitalWrite(kFanEast, LOW);
-            break;
-        case 2:
-            digitalWrite(kFanNorth, LOW);
-            digitalWrite(kFanWest, HIGH);
-            digitalWrite(kFanSouth, LOW);
-            digitalWrite(kFanEast, LOW);
-            break;
-        case 3:
-            digitalWrite(kFanNorth, LOW);
-            digitalWrite(kFanWest, LOW);
-            digitalWrite(kFanSouth, HIGH);
-            digitalWrite(kFanEast, LOW);
-            break;
-        case 4:
-            digitalWrite(kFanNorth, LOW);
-            digitalWrite(kFanWest, LOW);
-            digitalWrite(kFanSouth, LOW);
-            digitalWrite(kFanEast, HIGH);
-            break;
+    case 0:
+        digitalWrite(kFanNorth, LOW);
+        digitalWrite(kFanWest, LOW);
+        digitalWrite(kFanSouth, LOW);
+        digitalWrite(kFanEast, LOW);
+        break;
+    case 1:
+        digitalWrite(kFanNorth, HIGH);
+        digitalWrite(kFanWest, LOW);
+        digitalWrite(kFanSouth, LOW);
+        digitalWrite(kFanEast, LOW);
+        break;
+    case 2:
+        digitalWrite(kFanNorth, LOW);
+        digitalWrite(kFanWest, HIGH);
+        digitalWrite(kFanSouth, LOW);
+        digitalWrite(kFanEast, LOW);
+        break;
+    case 3:
+        digitalWrite(kFanNorth, LOW);
+        digitalWrite(kFanWest, LOW);
+        digitalWrite(kFanSouth, HIGH);
+        digitalWrite(kFanEast, LOW);
+        break;
+    case 4:
+        digitalWrite(kFanNorth, LOW);
+        digitalWrite(kFanWest, LOW);
+        digitalWrite(kFanSouth, LOW);
+        digitalWrite(kFanEast, HIGH);
+        break;
     }
 }
 
 void periodicUpdate()
 {
     //Handle ISR business
+    float northError = northSetpoint - m_encoderNorth.speed();
+    float westError  = westSetpoint  - m_encoderWest.speed();
+    float southError = southSetpoint - m_encoderSouth.speed();
+    float eastError  = eastSetpoint  - m_encoderEast.speed();
+    if (!m_stopped)
+    {
+        northSpeed = northError * kDriveP + m_encoderNorth.speed();
+        westSpeed  = westError  * kDriveP + m_encoderWest.speed();
+        southSpeed = southError * kDriveP + m_encoderSouth.speed();
+        eastSpeed  = eastError  * kDriveP + m_encoderEast.speed();
+    }
+    else
+    {
+        northSpeed = 90;
+        southSpeed = 90;
+        eastSpeed  = 90;
+        westSpeed  = 90;
+    }
 }

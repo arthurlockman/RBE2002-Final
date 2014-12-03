@@ -91,6 +91,7 @@ volatile long southLast;
 volatile long eastLast;
 static const int kQuadEncTicksPerRev = 360;
 static const int kSingleEncTicksPerRev = 180;
+static const float kDriveP = 0.1;
 
 static const int kISRRate = 1000000;
 static const int kISRMillis = kISRRate / 1000;
