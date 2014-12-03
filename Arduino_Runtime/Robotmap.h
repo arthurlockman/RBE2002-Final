@@ -61,6 +61,8 @@ enum AnalogPins
 // Number between 0 and 90
 int driveSpeed = 50;
 
+float kProportionalCompass = 1.0;
+
 int decelerationTime = 500;
 
 Direction currentDirection;

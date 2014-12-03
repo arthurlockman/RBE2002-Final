@@ -48,6 +48,7 @@ void setup()
     // Initialize ISR
     Timer1.initialize(kEncoderISRRate);
     Timer1.attachInterrupt(updateISR);
+
 }
 
 void loop()
@@ -208,6 +209,7 @@ void drive(int degreesFromNorth)
 
     driveMotors(m_north, m_south, motorSpeedNorthSouth);
     driveMotors(m_east, m_west, motorSpeedEastWest);
+    
 }
 
 void stopDrive()
@@ -243,6 +245,8 @@ void driveMotors(Servo a, Servo b, int motorSpeed)
         motorSpeed += 180;
     }
 
+    //float adjustedValue = adjust();
+
     a.write(180 - motorSpeed);
     b.write(motorSpeed);
 }
@@ -275,3 +279,17 @@ int calcMotorSpeedEastWest(int motorSpeed)
 {
     return (int)(cos(currentHeading * M_PI / 180) * motorSpeed) + 90;
 }
+
+float adjust(float desiredHeading)
+{
+    float nowHeading = m_compass.heading();
+
+    return kProportionalCompass * (desiredHeading - nowHeading);
+}
+
+
+
+
+
+
+
