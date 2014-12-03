@@ -1,6 +1,6 @@
 #include "Robotmap.h"
 
-#define DEBUG //Comment out to disable debug messages.
+// #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
 
 Servo          m_north, m_west, m_south, m_east;
@@ -46,12 +46,24 @@ void setup()
     attachInterrupt(m_encoderSouth.interruptPin, updateSouthEncoder, CHANGE);
     attachInterrupt(m_encoderNorth.interruptPin, updateNorthEncoder, CHANGE);
     attachInterrupt(m_encoderWest.interruptPin, updateWestEncoder, CHANGE);
+
+    pinMode(kFanNorth, OUTPUT);
+    pinMode(kFanWest, OUTPUT);
+    pinMode(kFanSouth, OUTPUT);
+    pinMode(kFanEast, OUTPUT);
+    digitalWrite(kFanNorth, LOW);
+    digitalWrite(kFanWest, LOW);
+    digitalWrite(kFanSouth, LOW);
+    digitalWrite(kFanEast, LOW);
 }
 
 void loop()
 {
     // m_compass.read();
-
+    digitalWrite(kFanNorth, LOW);
+    digitalWrite(kFanWest, LOW);
+    digitalWrite(kFanSouth, LOW);
+    digitalWrite(kFanEast, LOW);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -167,6 +179,7 @@ void testCode()
         drive(225);
     #endif
 }
+
 
 void initializeMotors()
 {

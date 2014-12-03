@@ -47,7 +47,11 @@ enum DigitalPins
 	kSouthRangeOut = 26,
 	kSouthRangeIn  = 27,
 	kEastRangeOut  = 28,
-	kEastRangeIn   = 29
+	kEastRangeIn   = 29,
+	kFanNorth      = 47,
+	kFanWest       = 49,
+	kFanSouth      = 51,
+	kFanEast       = 53
 };
 
 enum AnalogPins
