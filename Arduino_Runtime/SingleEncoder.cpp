@@ -1,7 +1,8 @@
 #include "SingleEncoder.h"
 
-SingleEncoder::SingleEncoder(int pin) :
-	interruptPin(0)
+SingleEncoder::SingleEncoder(int pin, int ticksPerRev) :
+	interruptPin(0),
+	m_ticksPerRev(ticksPerRev)
 {
 	switch (pin)
 	{
@@ -25,9 +26,24 @@ void SingleEncoder::update(int dir)
 		position++;
 	else if (dir == 0)
 		position--;
+
+	if (counter == 20)
+	{
+		counter = 0;
+		long dT = millis() - startTime;
+		startTime = millis();
+		m_speed = (1.0 / ((float)dT * (float)m_ticksPerRev)) * 1200000.0;
+		if (dir == 0) m_speed = -m_speed;
+	}
+	counter++;
 }
 
 void SingleEncoder::write(uint32_t newPosition)
 {
 	position = newPosition;
+}
+
+float SingleEncoder::speed()
+{
+	return m_speed;
 }

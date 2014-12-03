@@ -59,7 +59,7 @@ enum AnalogPins
 };
 
 // Number between 0 and 90
-int driveSpeed = 50;
+int driveSpeed = 40;
 
 float kProportionalCompass = 1.0;
 

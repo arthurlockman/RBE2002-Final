@@ -1,14 +1,14 @@
 #include "Robotmap.h"
 
-//#define DEBUG //Comment out to disable debug messages.
+#define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
 
 Servo          m_north, m_west, m_south, m_east;
 boolean        enabled = false;
-Encoder        m_encoderNorth(kNorthEncoderA, kNorthEncoderB);
-Encoder        m_encoderWest(kWestEncoderA, kWestEncoderB);
-SingleEncoder  m_encoderEast(kEastEncoderA);
-SingleEncoder  m_encoderSouth(kSouthEncoderA);
+SingleEncoder  m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
+SingleEncoder  m_encoderWest(kWestEncoderA, kSingleEncTicksPerRev);
+SingleEncoder  m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
+SingleEncoder  m_encoderSouth(kSouthEncoderA, kSingleEncTicksPerRev);
 LSM303         m_compass;
 L3G            m_gyro;
 Ultrasonic     m_rangeNorth(kNorthRangeOut, kNorthRangeIn);
@@ -44,11 +44,8 @@ void setup()
     // Attach interrupt for speed-only encoders
     attachInterrupt(m_encoderEast.interruptPin, updateEastEncoder, CHANGE);
     attachInterrupt(m_encoderSouth.interruptPin, updateSouthEncoder, CHANGE);
-
-    // Initialize ISR
-    Timer1.initialize(kEncoderISRRate);
-    Timer1.attachInterrupt(updateISR);
-
+    attachInterrupt(m_encoderNorth.interruptPin, updateNorthEncoder, CHANGE);
+    attachInterrupt(m_encoderWest.interruptPin, updateWestEncoder, CHANGE);
 }
 
 void loop()
@@ -121,29 +118,14 @@ void updateSouthEncoder()
     m_encoderSouth.update(southDirection);
 }
 
-void updateISR()
+void updateNorthEncoder()
 {
-    long northCurrent = m_encoderNorth.read();
-    long westCurrent = m_encoderWest.read();
-    long southCurrent = m_encoderSouth.read();
-    long eastCurrent = m_encoderEast.read();
+    m_encoderNorth.update(southDirection);
+}
 
-    northSouthPosition += northCurrent - northLast;
-    eastWestPosition += westCurrent - westLast;
-
-    northSpeed = CalculateEncoderSpeed(northCurrent - northLast,
-        kEncoderISRMillis, kQuadEncTicksPerRev);
-    westSpeed  = CalculateEncoderSpeed(westCurrent - westLast,
-        kEncoderISRMillis, kQuadEncTicksPerRev);
-    southSpeed = CalculateEncoderSpeed(southCurrent - southLast,
-        kEncoderISRMillis, kSingleEncTicksPerRev);
-    eastSpeed  = CalculateEncoderSpeed(eastCurrent - eastLast,
-        kEncoderISRMillis, kSingleEncTicksPerRev);
-
-    northLast = northCurrent;
-    westLast = westCurrent;
-    southLast = southCurrent;
-    eastLast = eastCurrent;
+void updateWestEncoder()
+{
+    m_encoderWest.update(eastDirection);
 }
 
 void printToConsole(String message)
@@ -155,25 +137,26 @@ void printToConsole(String message)
 void printDebuggingMessages()
 {
     #if defined(DEBUG)
-        float heading = m_compass.heading();
-        Serial.print(northSpeed);
+        // float heading = m_compass.heading();
+        Serial.print(m_encoderNorth.speed());
         Serial.print('\t');
-        Serial.print(westSpeed);
+        Serial.print(m_encoderWest.speed());
         Serial.print('\t');
-        Serial.print(southSpeed);
+        Serial.print(m_encoderSouth.speed());
         Serial.print('\t');
-        Serial.print(eastSpeed);
+        Serial.print(m_encoderEast.speed());
         Serial.print('\t');
-        Serial.print(heading);
-        Serial.print('\t');
-        m_gyro.read();
-        Serial.print("G ");
-        Serial.print("X: ");
-        Serial.print((int)m_gyro.g.x);
-        Serial.print(" Y: ");
-        Serial.print((int)m_gyro.g.y);
-        Serial.print(" Z: ");
-        Serial.println((int)m_gyro.g.z);
+        // Serial.print(heading);
+        // Serial.print('\t');
+        // m_gyro.read();
+        // Serial.print("G ");
+        // Serial.print("X: ");
+        // Serial.print((int)m_gyro.g.x);
+        // Serial.print(" Y: ");
+        // Serial.print((int)m_gyro.g.y);
+        // Serial.print(" Z: ");
+        // Serial.print((int)m_gyro.g.z);
+        Serial.println();
         delay(100);
     #endif
 }
@@ -181,7 +164,7 @@ void printDebuggingMessages()
 void testCode()
 {
     #if defined(TESTING)
-        drive(0);
+        drive(225);
     #endif
 }
 
@@ -202,8 +185,8 @@ void drive(int degreesFromNorth)
     int motorSpeedEastWest = calcMotorSpeedEastWest(driveSpeed);
 
     //Set directions for encoders
-    if (motorSpeedNorthSouth < 90) southDirection = 0;
-    else southDirection = 1;
+    if (motorSpeedNorthSouth < 90) southDirection = 1;
+    else southDirection = 0;
     if (motorSpeedEastWest < 90) eastDirection = 0;
     else eastDirection = 1;
 
