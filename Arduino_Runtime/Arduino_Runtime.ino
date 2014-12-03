@@ -1,6 +1,6 @@
 #include "Robotmap.h"
 
-#define DEBUG //Comment out to disable debug messages.
+//#define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
 
 Servo          m_north, m_west, m_south, m_east;
@@ -34,12 +34,12 @@ void setup()
     m_compass.m_max = (LSM303::vector<int16_t>){+1909,  +1794,  +1076};
 
     // Initialize gyro
-    if (!m_gyro.init())
-    {
-        Serial.println("Failed to autodetect gyro type!");
-        while (1);
-    }
-    m_gyro.enableDefault();
+    // if (!m_gyro.init())
+    // {
+    //     Serial.println("Failed to autodetect gyro type!");
+    //     while (1);
+    // }
+    // m_gyro.enableDefault();
 
     // Attach interrupt for speed-only encoders
     attachInterrupt(m_encoderEast.interruptPin, updateEastEncoder, CHANGE);
@@ -53,7 +53,7 @@ void setup()
 
 void loop()
 {
-    m_compass.read();
+    // m_compass.read();
 
     while (Serial.available() > 0)
     {
