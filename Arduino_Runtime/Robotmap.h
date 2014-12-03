@@ -91,8 +91,9 @@ volatile long southLast;
 volatile long eastLast;
 static const int kQuadEncTicksPerRev = 360;
 static const int kSingleEncTicksPerRev = 180;
-static const int kEncoderISRRate = 1000000;
-static const int kEncoderISRMillis = kEncoderISRRate / 1000;
+
+static const int kISRRate = 1000000;
+static const int kISRMillis = kISRRate / 1000;
 
 //Position things
 volatile long northSouthPosition = 0;

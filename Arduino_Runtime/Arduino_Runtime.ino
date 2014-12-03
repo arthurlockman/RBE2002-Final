@@ -2,6 +2,7 @@
 
 // #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
+#define IMU //Comment out to disable IMU
 
 Servo          m_north, m_west, m_south, m_east;
 boolean        enabled = false;
@@ -26,20 +27,22 @@ void setup()
     initializeMotors();
     testCode();
     
-    // Initialize Compass
-    Wire.begin();
-    m_compass.init();
-    m_compass.enableDefault();
-    m_compass.m_min = (LSM303::vector<int16_t>){-1748,  -1899,  -2515};
-    m_compass.m_max = (LSM303::vector<int16_t>){+1909,  +1794,  +1076};
+    #if defined(IMU)
+        // Initialize Compass
+        Wire.begin();
+        m_compass.init();
+        m_compass.enableDefault();
+        m_compass.m_min = (LSM303::vector<int16_t>){-1748,  -1899,  -2515};
+        m_compass.m_max = (LSM303::vector<int16_t>){+1909,  +1794,  +1076};
 
-    // Initialize gyro
-    // if (!m_gyro.init())
-    // {
-    //     Serial.println("Failed to autodetect gyro type!");
-    //     while (1);
-    // }
-    // m_gyro.enableDefault();
+        // Initialize gyro
+        if (!m_gyro.init())
+        {
+            Serial.println("Failed to autodetect gyro type!");
+            while (1);
+        }
+        m_gyro.enableDefault();
+    #endif
 
     // Attach interrupt for speed-only encoders
     attachInterrupt(m_encoderEast.interruptPin, updateEastEncoder, CHANGE);
@@ -47,23 +50,20 @@ void setup()
     attachInterrupt(m_encoderNorth.interruptPin, updateNorthEncoder, CHANGE);
     attachInterrupt(m_encoderWest.interruptPin, updateWestEncoder, CHANGE);
 
+    // Initialize fan control
     pinMode(kFanNorth, OUTPUT);
     pinMode(kFanWest, OUTPUT);
     pinMode(kFanSouth, OUTPUT);
     pinMode(kFanEast, OUTPUT);
-    digitalWrite(kFanNorth, LOW);
-    digitalWrite(kFanWest, LOW);
-    digitalWrite(kFanSouth, LOW);
-    digitalWrite(kFanEast, LOW);
+    setFans(0);
+
+    //Setup timer interrupts
+    Timer1.initialize(kISRRate);
+    Timer1.attachInterrupt(periodicUpdate);
 }
 
 void loop()
 {
-    // m_compass.read();
-    digitalWrite(kFanNorth, LOW);
-    digitalWrite(kFanWest, LOW);
-    digitalWrite(kFanSouth, LOW);
-    digitalWrite(kFanEast, LOW);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -118,6 +118,7 @@ void loop()
         }
     }
     printDebuggingMessages();
+    imuRoutine();
 }
 
 void updateEastEncoder()
@@ -149,7 +150,7 @@ void printToConsole(String message)
 void printDebuggingMessages()
 {
     #if defined(DEBUG)
-        // float heading = m_compass.heading();
+        float heading = m_compass.heading();
         Serial.print(m_encoderNorth.speed());
         Serial.print('\t');
         Serial.print(m_encoderWest.speed());
@@ -158,16 +159,15 @@ void printDebuggingMessages()
         Serial.print('\t');
         Serial.print(m_encoderEast.speed());
         Serial.print('\t');
-        // Serial.print(heading);
-        // Serial.print('\t');
-        // m_gyro.read();
-        // Serial.print("G ");
-        // Serial.print("X: ");
-        // Serial.print((int)m_gyro.g.x);
-        // Serial.print(" Y: ");
-        // Serial.print((int)m_gyro.g.y);
-        // Serial.print(" Z: ");
-        // Serial.print((int)m_gyro.g.z);
+        Serial.print(heading);
+        Serial.print('\t');
+        Serial.print("G ");
+        Serial.print("X: ");
+        Serial.print((int)m_gyro.g.x);
+        Serial.print(" Y: ");
+        Serial.print((int)m_gyro.g.y);
+        Serial.print(" Z: ");
+        Serial.print((int)m_gyro.g.z);
         Serial.println();
         delay(100);
     #endif
@@ -180,6 +180,13 @@ void testCode()
     #endif
 }
 
+void imuRoutine()
+{
+    #if defined(IMU)
+        m_compass.read();
+        m_gyro.read();
+    #endif
+}
 
 void initializeMotors()
 {
@@ -188,7 +195,6 @@ void initializeMotors()
     m_south.attach(kSouthMotor, 1000, 2000);
     m_east.attach(kEastMotor, 1000, 2000);
 }
-
 
 void drive(int degreesFromNorth)
 {
@@ -205,7 +211,6 @@ void drive(int degreesFromNorth)
 
     driveMotors(m_north, m_south, motorSpeedNorthSouth);
     driveMotors(m_east, m_west, motorSpeedEastWest);
-    
 }
 
 void stopDrive()
@@ -279,13 +284,47 @@ int calcMotorSpeedEastWest(int motorSpeed)
 float adjust(float desiredHeading)
 {
     float nowHeading = m_compass.heading();
-
     return kProportionalCompass * (desiredHeading - nowHeading);
 }
 
+void setFans(int fan)
+{
+    switch (fan)
+    {
+        case 0:
+            digitalWrite(kFanNorth, LOW);
+            digitalWrite(kFanWest, LOW);
+            digitalWrite(kFanSouth, LOW);
+            digitalWrite(kFanEast, LOW);
+            break;
+        case 1:
+            digitalWrite(kFanNorth, HIGH);
+            digitalWrite(kFanWest, LOW);
+            digitalWrite(kFanSouth, LOW);
+            digitalWrite(kFanEast, LOW);
+            break;
+        case 2:
+            digitalWrite(kFanNorth, LOW);
+            digitalWrite(kFanWest, HIGH);
+            digitalWrite(kFanSouth, LOW);
+            digitalWrite(kFanEast, LOW);
+            break;
+        case 3:
+            digitalWrite(kFanNorth, LOW);
+            digitalWrite(kFanWest, LOW);
+            digitalWrite(kFanSouth, HIGH);
+            digitalWrite(kFanEast, LOW);
+            break;
+        case 4:
+            digitalWrite(kFanNorth, LOW);
+            digitalWrite(kFanWest, LOW);
+            digitalWrite(kFanSouth, LOW);
+            digitalWrite(kFanEast, HIGH);
+            break;
+    }
+}
 
-
-
-
-
-
+void periodicUpdate()
+{
+    //Handle ISR business
+}
