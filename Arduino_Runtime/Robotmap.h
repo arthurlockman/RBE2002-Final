@@ -3,7 +3,6 @@
 
 #include "Servo.h"
 #include "math.h"
-#include "Encoder.h"
 #include "LSM303.h"
 #include "L3G.h"
 #include "SingleEncoder.h"
