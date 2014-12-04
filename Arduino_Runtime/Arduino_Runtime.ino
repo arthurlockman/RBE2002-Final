@@ -156,32 +156,64 @@ void loop()
     updateDrive();
 }
 
+/**
+ * @brief Updates the east encoder.
+ * @details Updates the east encoder with the proper 
+ * direction variable.
+ */
 void updateEastEncoder()
 {
     m_encoderEast.update(eastDirection);
 }
 
+/**
+ * @brief Updates the south encoder.
+ * @details Updates the south encoder with the proper 
+ * direction variable.
+ */
 void updateSouthEncoder()
 {
     m_encoderSouth.update(southDirection);
 }
 
+/**
+ * @brief Updates the north encoder.
+ * @details Updates the north encoder with the proper 
+ * direction variable.
+ */
 void updateNorthEncoder()
 {
     m_encoderNorth.update(southDirection);
 }
 
+/**
+ * @brief Updates the west encoder.
+ * @details Updates the west encoder with the proper 
+ * direction variable.
+ */
 void updateWestEncoder()
 {
     m_encoderWest.update(eastDirection);
 }
 
+/**
+ * @brief Prints to console.
+ * @details Prints a message to the control
+ * server console. This shows up on the web controller.
+ * 
+ * @param message The message to send.
+ */
 void printToConsole(String message)
 {
     String command = "cons:" + message;
     Serial.println(command);
 }
 
+/**
+ * @brief Prints debug messages.
+ * @details Prints messages useful for debugging. Enabled
+ * by uncommenting the #DEBUG line at the top of this file.
+ */
 void printDebuggingMessages()
 {
 #if defined(DEBUG)
@@ -208,6 +240,12 @@ void printDebuggingMessages()
 #endif
 }
 
+/**
+ * @brief Runs tests.
+ * @details This method can be used to run code tests. To
+ * use it, uncomment the #TESTING block at the top of this
+ * file. This enables the testing block to be run each loop.
+ */
 void testCode()
 {
 #if defined(TESTING)
@@ -215,6 +253,12 @@ void testCode()
 #endif
 }
 
+/**
+ * @brief Handles IMU readings.
+ * @details This method handles the readings for the
+ * IMU. This ensures that the IMU is only read once per 
+ * loop.
+ */
 void imuRoutine()
 {
 #if defined(IMU)
@@ -223,6 +267,11 @@ void imuRoutine()
 #endif
 }
 
+/**
+ * @brief Initializes motors.
+ * @details Handles motor startup. Attaches all servos
+ * with proper constants.
+ */
 void initializeMotors()
 {
     m_north.attach(kNorthMotor, 1000, 2000);
@@ -231,6 +280,15 @@ void initializeMotors()
     m_east.attach(kEastMotor, 1000, 2000);
 }
 
+/**
+ * @brief Drives the robot.
+ * @details This method drives the robot at a heading as 
+ * described in degrees from north. For instance, entering
+ * a value of 90 causes the robot to drive due east, while
+ * 135 causes it to drive south-east.
+ * 
+ * @param degreesFromNorth The heading in degrees from north.
+ */
 void drive(int degreesFromNorth)
 {
     m_stopped = false;
@@ -268,16 +326,33 @@ void drive(int degreesFromNorth)
 #endif
 }
 
+/**
+ * @brief Handles PID drive update.
+ * @details This method updates the motor speeds according to
+ * the values calculated in the PID service routine. 
+ */
 void updateDrive()
 {
 #if defined(DRIVE_PID)
-    m_north.write(180 - ((northSpeed < 0) ? northSpeed + 180 : northSpeed));
-    m_south.write(((southSpeed < 0) ? southSpeed + 180 : southSpeed));
-    m_east.write(180 - ((eastSpeed < 0) ? eastSpeed + 180 : eastSpeed));
-    m_west.write(((westSpeed < 0) ? westSpeed + 180 : westSpeed));
+    if (!m_stopped)
+    {
+        m_north.write(180 - ((northSpeed < 0) ? northSpeed + 180 : northSpeed));
+        m_south.write(((southSpeed < 0) ? southSpeed + 180 : southSpeed));
+        m_east.write(180 - ((eastSpeed < 0) ? eastSpeed + 180 : eastSpeed));
+        m_west.write(((westSpeed < 0) ? westSpeed + 180 : westSpeed));
+    } else {
+        m_north.write(90);
+        m_west.write(90);
+        m_east.write(90);
+        m_south.write(90);
+    }
 #endif
 }
 
+/**
+ * @brief Stop the drivetrain.
+ * @details Stops all motors regardless of drive mode.
+ */
 void stopDrive()
 {
 #if defined(DRIVE_PID)
@@ -294,6 +369,14 @@ void stopDrive()
 #endif
 }
 
+/**
+ * @brief Spin the robot
+ * @details Spins the robot in a desired
+ * direction at a fixed speed. 
+ * 
+ * @param left If set to 1, robot turns
+ * left, else turns right.
+ */
 void spin(int left)
 {
     if (left == 1)
@@ -312,6 +395,18 @@ void spin(int left)
     }
 }
 
+/**
+ * @brief Drive motors.
+ * @details This method drives the robot motors. It takes
+ * in two servo objects and writes the correct speeds to 
+ * them. This assumes that the two motors are on opposite
+ * sides of the robot and are in direct opposition, like
+ * using north as A and south as B.
+ * 
+ * @param a The first motor.
+ * @param b The second motor.
+ * @param motorSpeed The desired speed to set them at.
+ */
 void driveMotors(Servo a, Servo b, int motorSpeed)
 {
     if (motorSpeed < 0)
@@ -344,11 +439,29 @@ void decelerate()
     }
 }
 
+/**
+ * @brief Calculates north-south speeds.
+ * @details Calculates the motor speeds for the north-south
+ * motors based on the current heading and the desired 
+ * speed.
+ * 
+ * @param motorSpeed The desired motor speed.
+ * @return The calculated north-south speed.
+ */
 int calcMotorSpeedNorthSouth(int motorSpeed)
 {
     return -(int)(sin(currentHeading * M_PI / 180) * motorSpeed) + 90;
 }
 
+/**
+ * @brief Calculates east-west speeds.
+ * @details Calculates the motor speeds for the east-west
+ * motors based on the current heading and the desired 
+ * speed.
+ * 
+ * @param motorSpeed The desired motor speed.
+ * @return The calculated east-west speed.
+ */
 int calcMotorSpeedEastWest(int motorSpeed)
 {
     return (int)(cos(currentHeading * M_PI / 180) * motorSpeed) + 90;
@@ -360,6 +473,15 @@ float adjust(float desiredHeading)
     return kProportionalCompass * (desiredHeading - nowHeading);
 }
 
+/**
+ * @brief Enables fans.
+ * @details This function handles turning on and off the
+ * flame extinguisher fans on the robot. Sending a value of 
+ * 0 turns all fans off, and 5 turns all on. Values 1-4 set
+ * fans counter-clockwise starting at North going to East.
+ * 
+ * @param fan The fan control value.
+ */
 void setFans(int fan)
 {
     switch (fan)
@@ -403,9 +525,13 @@ void setFans(int fan)
     }
 }
 
+/**
+ * @brief ISR Routine
+ * @details This function handles updating motor PID
+ * control variables, as well as other ISR business.
+ */
 void periodicUpdate()
 {
-    //Handle ISR business
     float northError = northSetpoint - m_encoderNorth.speed();
     float westError  = westSetpoint  - m_encoderWest.speed();
     float southError = southSetpoint - m_encoderSouth.speed();
