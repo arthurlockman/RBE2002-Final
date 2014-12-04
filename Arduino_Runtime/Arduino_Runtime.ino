@@ -22,6 +22,10 @@ LightSensor    m_lightNorth(kLightSensorNorth, kLightSensorThresh);
 LightSensor    m_lightWest(kLightSensorWest, kLightSensorThresh);
 LightSensor    m_lightSouth(kLightSensorSouth, kLightSensorThresh);
 LightSensor    m_lightEast(kLightSensorEast, kLightSensorThresh);
+FlameSensor    m_flameNorth(kFlameSensorNorth);
+FlameSensor    m_flameWest(kFlameSensorWest);
+FlameSensor    m_flameSouth(kFlameSensorSouth);
+FlameSensor    m_flameEast(kFlameSensorEast);
 
 void setup()
 {

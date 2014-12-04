@@ -10,6 +10,7 @@
 #include "TimerOne.h"
 #include "Ultrasonic.h"
 #include "LightSensor.h"
+#include "FlameSensor.h"
 
 enum MotorPins
 {
@@ -58,6 +59,10 @@ enum AnalogPins
 	kLightSensorWest  = 0,
 	kLightSensorSouth = 1,
 	kLightSensorEast  = 2,
+	kFlameSensorNorth = 3,
+	kFlameSensorWest  = 4,
+	kFlameSensorSouth = 5,
+	kFlameSensorEast  = 6,
 	kLightSensorNorth = 11
 };
 
