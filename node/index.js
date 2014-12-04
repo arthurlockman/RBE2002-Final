@@ -51,6 +51,7 @@ io.on('connection', function(socket) {
             enabled = false;
             stop();
             serialPort.write('ds\n');
+            serialPort.write('fo\n');
             console.log('disabling robot...');
         }
     });
@@ -58,6 +59,7 @@ io.on('connection', function(socket) {
         console.log('Controller disconnected. Disabling...');
         stop();
         enabled = false;
+        serialPort.write('fo\n');
         serialPort.write('ds\n');
     });
 });

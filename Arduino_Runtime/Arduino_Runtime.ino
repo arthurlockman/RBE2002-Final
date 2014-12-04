@@ -126,6 +126,30 @@ void loop()
         {
             enabled = false;
         }
+        else if (command == "fn")
+        {
+            setFans(1);
+        }
+        else if (command == "fw")
+        {
+            setFans(2);
+        }
+        else if (command == "fs")
+        {
+            setFans(3);
+        }
+        else if (command == "fe")
+        {
+            setFans(4);
+        }
+        else if (command == "fa")
+        {
+            setFans(5);
+        }
+        else if (command == "fo")
+        {
+            setFans(0);
+        }
     }
     printDebuggingMessages();
     imuRoutine();
@@ -368,6 +392,12 @@ void setFans(int fan)
         digitalWrite(kFanNorth, LOW);
         digitalWrite(kFanWest, LOW);
         digitalWrite(kFanSouth, LOW);
+        digitalWrite(kFanEast, HIGH);
+        break;
+    case 5:
+        digitalWrite(kFanNorth, HIGH);
+        digitalWrite(kFanWest, HIGH);
+        digitalWrite(kFanSouth, HIGH);
         digitalWrite(kFanEast, HIGH);
         break;
     }

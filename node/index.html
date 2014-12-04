@@ -43,9 +43,9 @@ input.enable {
 <table border="1" style="height:75%%; width:100%; position: absolute; top: 25%; bottom: 0; left: 0; right: 0;border:none; text-align:center" >
   <tbody>
     <tr>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NWButtom" value="North West" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'nw');"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NWButtom" value="West Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fw');"></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="NButton" value="North" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 'n');"></td>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NEButton" value="North East" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'ne');"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NEButton" value="North Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fn');"></td>
     </tr>
     <tr>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="WButton" value="West" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 'w');"></td>
@@ -53,14 +53,14 @@ input.enable {
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="EButton" value="East" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 'e');"></td>
     </tr>
     <tr>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SWButton" value="South West" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'sw');"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SWButton" value="South Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fs');"></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="SButton" value="South" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 's');"></td>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SEButton" value="South East" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'se');"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SEButton" value="East Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fe');"></td>
     </tr>
     <tr>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="Enable" value="Enable" class="enable" style="background-color:#FFF600" onClick="socket.emit('enable', 'enable');"></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="Disable" value="Disable" class="enable" onClick="socket.emit('enable', 'disable');"></td>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="UNUSED" value="Spin" class="enable" onClick="socket.emit('command', 'sp')"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="stopFan" value="Stop Fans" class="enable" onClick="socket.emit('command', 'fo')"></td>
     </tr>
   </tbody>
 </table>
