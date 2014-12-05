@@ -1,33 +1,17 @@
-/*
-  Ultrasonic.h - Library for HR-SC04 Ultrasonic Ranging Module.
-  Created by ITead studio. Alex, Apr 20, 2010.
-  iteadstudio.com
-  
-  * modified 29 Oct 2013
-  * by Hemal Chevli - black-electronics.com
-*/
-
-
 #ifndef Ultrasonic_h
 #define Ultrasonic_h
 
 #include "Arduino.h"
 
-#define CM 1
-#define INC 0
-
 class Ultrasonic
 {
-  public:
-    Ultrasonic(int TP, int EP);
-    long Timing();
-    long Ranging(int sys);
-
-    private:
-    int Trig_pin;
-    int Echo_pin;
-    long  duration,distacne_cm,distance_inc;
-    
+public:
+    Ultrasonic(int trig, int echo);
+    int rawRead();
+    void activate();
+private:
+    int m_trig;
+    int m_echo;
 };
 
 #endif

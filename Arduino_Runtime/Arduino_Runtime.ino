@@ -1,7 +1,7 @@
 #include "Robotmap.h"
 
 // #define DEBUG //Comment out to disable debug messages.
-// #define TESTING //Comment out to disable testing.
+#define TESTING //Comment out to disable testing.
 // #define IMU //Comment out to disable IMU
 // #define DRIVE_PID //Comment out to disable Drive PID
 
@@ -68,6 +68,12 @@ void setup()
     pinMode(kFanSouth, OUTPUT);
     pinMode(kFanEast, OUTPUT);
     setFans(0);
+
+    // Activate ultrasonics
+    m_rangeNorth.activate();
+    m_rangeWest.activate();
+    m_rangeSouth.activate();
+    m_rangeEast.activate();
 
 #if defined(DRIVE_PID)
     //Setup timer interrupts
@@ -253,7 +259,7 @@ void printDebuggingMessages()
 void testCode()
 {
 #if defined(TESTING)
-    drive(225);
+
 #endif
 }
 
