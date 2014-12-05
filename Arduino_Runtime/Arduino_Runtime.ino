@@ -1,7 +1,7 @@
 #include "Robotmap.h"
 
 // #define DEBUG //Comment out to disable debug messages.
-#define TESTING //Comment out to disable testing.
+// #define TESTING //Comment out to disable testing.
 // #define IMU //Comment out to disable IMU
 // #define DRIVE_PID //Comment out to disable Drive PID
 
