@@ -1,17 +1,21 @@
+/*
+  Ultrasonic.h - Library for finding the distance to an object in inches.
+*/
+
 #ifndef Ultrasonic_h
 #define Ultrasonic_h
 
 #include "Arduino.h"
 
-class Ultrasonic
-{
+class Ultrasonic {
 public:
-    Ultrasonic(int trig, int echo);
-    int rawRead();
-    void activate();
+  Ultrasonic(int pingPin, int echoPin);
+  float distance();
+  float calc();
 private:
-    int m_trig;
-    int m_echo;
+  int _pingPin;
+  int _echoPin;
 };
 
 #endif
+

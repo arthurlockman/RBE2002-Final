@@ -14,9 +14,9 @@ SingleEncoder  m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
 SingleEncoder  m_encoderSouth(kSouthEncoderA, kSingleEncTicksPerRev);
 LSM303         m_compass;
 L3G            m_gyro;
-Ultrasonic     m_rangeNorth(kNorthRangeOut, kNorthRangeIn);
-Ultrasonic     m_rangeWest(kWestRangeOut, kWestRangeIn);
-Ultrasonic     m_rangeSouth(kSouthRangeOut, kSouthRangeIn);
+Ultrasonic     m_rangeNorth(kNorthRangeIn, kNorthRangeOut);
+Ultrasonic     m_rangeWest(kWestRangeIn, kWestRangeOut);
+Ultrasonic     m_rangeSouth(kSouthRangeIn, kSouthRangeOut);
 Ultrasonic     m_rangeEast(kEastRangeIn, kEastRangeOut);
 LightSensor    m_lightNorth(kLightSensorNorth, kLightSensorThresh);
 LightSensor    m_lightWest(kLightSensorWest, kLightSensorThresh);
@@ -68,12 +68,6 @@ void setup()
     pinMode(kFanSouth, OUTPUT);
     pinMode(kFanEast, OUTPUT);
     setFans(0);
-
-    // Activate ultrasonics
-    m_rangeNorth.activate();
-    m_rangeWest.activate();
-    m_rangeSouth.activate();
-    m_rangeEast.activate();
 
 #if defined(DRIVE_PID)
     //Setup timer interrupts
