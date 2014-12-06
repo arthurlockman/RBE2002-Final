@@ -78,6 +78,7 @@ void setup()
 
 void loop()
 {
+    followWall(1, 1);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -158,6 +159,62 @@ void loop()
     printDebuggingMessages();
     imuRoutine();
     updateDrive();
+}
+
+int followWall(int side, int dir)
+{
+    int driveDir;
+    float wallDist;
+    float wall2Dist;
+
+    switch (side)
+    {
+    case 1:
+        wallDist = m_rangeNorth.distance();
+        wall2Dist = (dir == 1)? m_rangeEast.distance() : m_rangeWest.distance();
+        if (wall2Dist < 6.0) { stopDrive(); return 1; }
+        else if (wallDist > 6.0 && dir == 1) { drive(45); }
+        else if (wallDist > 6.0 && dir == 0) { drive(315); }
+        else if (wallDist < 3.0 && dir == 1) { drive(135); }
+        else if (wallDist < 3.0 && dir == 0) { drive(225); }
+        else if (dir == 1) { drive(90); }
+        else if (dir == 0) { drive(270); }
+        break;
+    case 2:
+        wallDist = m_rangeWest.distance();
+        wall2Dist = (dir == 1)? m_rangeNorth.distance() : m_rangeSouth.distance();
+        if (wall2Dist < 6.0) { stopDrive(); return 1; }
+        else if (wallDist > 6.0 && dir == 1) { drive(315); }
+        else if (wallDist > 6.0 && dir == 0) { drive(225); }
+        else if (wallDist < 3.0 && dir == 1) { drive(45); }
+        else if (wallDist < 3.0 && dir == 0) { drive(135); }
+        else if (dir == 1) { drive(0); }
+        else if (dir == 0) { drive(180); }
+        break;
+    case 3:
+        wallDist = m_rangeSouth.distance();
+        wall2Dist = (dir == 1)? m_rangeWest.distance() : m_rangeEast.distance();
+        if (wall2Dist < 6.0) { stopDrive(); return 1; }
+        else if (wallDist > 6.0 && dir == 1) { drive(225); }
+        else if (wallDist > 6.0 && dir == 0) { drive(135); }
+        else if (wallDist < 3.0 && dir == 1) { drive(315); }
+        else if (wallDist < 3.0 && dir == 0) { drive(45); }
+        else if (dir == 1) { drive(270); }
+        else if (dir == 0) { drive(90); }
+        break;
+    case 4:
+        wallDist = m_rangeEast.distance();
+        wall2Dist = (dir == 1)? m_rangeSouth.distance() : m_rangeNorth.distance();
+        if (wall2Dist < 6.0) { stopDrive(); return 1; }
+        else if (wallDist > 6.0 && dir == 1) { drive(135); }
+        else if (wallDist > 6.0 && dir == 0) { drive(45); }
+        else if (wallDist < 3.0 && dir == 1) { drive(225); }
+        else if (wallDist < 3.0 && dir == 0) { drive(315); }
+        else if (dir == 1) { drive(180); }
+        else if (dir == 0) { drive(0); }
+        break;
+    }
+    return 0;
 }
 
 /**
