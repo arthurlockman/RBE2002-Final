@@ -43,11 +43,11 @@ void setup()
     m_compass.enableDefault();
     m_compass.m_min = (LSM303::vector<int16_t>)
     {
-        -1748,  -1899,  -2515
+        -828,  -1899,  -2080
     };
     m_compass.m_max = (LSM303::vector<int16_t>)
     {
-        +1909,  +1794,  +1076
+        1001,  1794,  -253
     };
 
     // Initialize gyro
@@ -59,14 +59,20 @@ void setup()
     m_gyro.enableDefault();
 
     Serial.println("Zeroing Gyro...");
+    m_compass.read();
     for (int i = 0; i < 100; i++)
     {
+        m_compass.read();
         m_gyro.read();
         m_gyroZero += m_gyro.g.y;
+        startOrientation += getCurrentOrientation();
     }
     m_gyroZero = (int)((float)m_gyroZero / 100.0);
+    startOrientation = startOrientation / 100.0;
     Serial.print("Gyro Y Zero: ");
     Serial.println(m_gyroZero);
+    Serial.print("Starting orientation: ");
+    Serial.println(startOrientation);
 #endif
 
     // Attach interrupt for speed-only encoders
@@ -91,6 +97,7 @@ void setup()
 
 void loop()
 {
+    // drive(45);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -175,7 +182,7 @@ void loop()
 
 int readGyroY()
 {
-    if (m_gyro.g.y > (m_gyroZero + 100) || m_gyro.g.y < (m_gyroZero - 100))
+    if (m_gyro.g.y > (m_gyroZero + 50) || m_gyro.g.y < (m_gyroZero - 50))
     {
         return m_gyro.g.y - m_gyroZero;
     }
@@ -390,7 +397,6 @@ void printToConsole(String message)
 void printDebuggingMessages()
 {
 #if defined(DEBUG)
-    float heading = m_compass.heading();
     Serial.print(m_encoderNorth.speed());
     Serial.print('\t');
     Serial.print(m_encoderWest.speed());
@@ -399,7 +405,7 @@ void printDebuggingMessages()
     Serial.print('\t');
     Serial.print(m_encoderEast.speed());
     Serial.print('\t');
-    Serial.print(heading);
+    Serial.print(getCurrentOrientation());
     Serial.print('\t');
     Serial.print("G ");
     Serial.print("X: ");
@@ -424,6 +430,24 @@ void testCode()
 #if defined(TESTING)
 
 #endif
+}
+
+float getCurrentOrientation()
+{
+    float accum = 0;
+    for (int i = 0; i < 10; i++)
+    {
+        float x_value = m_compass.m.x;
+        float z_value = m_compass.m.z;
+
+        float x_corrected = (x_value - m_compass.m_min.x) * (180) / (m_compass.m_max.x - m_compass.m_min.x) - 90;
+        float z_corrected = (z_value - m_compass.m_min.z) * (180) / (m_compass.m_max.z - m_compass.m_min.z) - 90;
+
+        float raw_orientation = atan2(z_corrected, x_corrected) * (180 / M_PI);
+
+        accum += (raw_orientation < 0) ? raw_orientation + 360.0 : raw_orientation;
+    }  
+    return accum / 10.0;
 }
 
 /**
@@ -494,8 +518,12 @@ void drive(int degreesFromNorth)
     if (motorSpeedEastWest < 90) eastDirection = 0;
     else eastDirection = 1;
 
-    driveMotors(m_north, m_south, motorSpeedNorthSouth);
-    driveMotors(m_east, m_west, motorSpeedEastWest);
+    northSetpoint = motorSpeedNorthSouth;
+    southSetpoint = motorSpeedNorthSouth;
+    eastSetpoint  = motorSpeedEastWest;
+    westSetpoint  = motorSpeedEastWest;
+    // driveMotors(m_north, m_south, motorSpeedNorthSouth);
+    // driveMotors(m_east, m_west, motorSpeedEastWest);
 #endif
 }
 
@@ -513,6 +541,29 @@ void updateDrive()
         m_south.write(((southSpeed < 0) ? southSpeed + 180 : southSpeed));
         m_east.write(180 - ((eastSpeed < 0) ? eastSpeed + 180 : eastSpeed));
         m_west.write(((westSpeed < 0) ? westSpeed + 180 : westSpeed));
+    }
+    else
+    {
+        m_north.write(90);
+        m_west.write(90);
+        m_east.write(90);
+        m_south.write(90);
+    }
+#else
+    int gyroRate = readGyroY();
+    if (gyroRate != 0) //turning CCW
+    {
+        northSetpoint += (gyroRate * kGyroCorrectionP);
+        westSetpoint  += -(gyroRate * kGyroCorrectionP);
+        southSetpoint += -(gyroRate * kGyroCorrectionP);
+        eastSetpoint  += (gyroRate * kGyroCorrectionP);
+    }
+    if (!m_stopped)
+    {
+        m_north.write(180 - ((northSetpoint < 0) ? northSetpoint + 180 : northSetpoint));
+        m_south.write(((southSetpoint < 0) ? southSetpoint + 180 : southSetpoint));
+        m_east.write(180 - ((eastSetpoint < 0) ? eastSetpoint + 180 : eastSetpoint));
+        m_west.write(((westSetpoint < 0) ? westSetpoint + 180 : westSetpoint));
     }
     else
     {
