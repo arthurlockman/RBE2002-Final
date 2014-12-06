@@ -1,6 +1,6 @@
 #include "Robotmap.h"
 
-#define DEBUG //Comment out to disable debug messages.
+// #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
 #define IMU //Comment out to disable IMU
 // #define DRIVE_PID //Comment out to disable Drive PID
@@ -97,7 +97,6 @@ void setup()
 
 void loop()
 {
-    // drive(45);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -551,12 +550,13 @@ void updateDrive()
     }
 #else
     int gyroRate = readGyroY();
+    float headingError = getCurrentOrientation() - startOrientation;
     if (gyroRate != 0) //turning CCW
     {
-        northSetpoint += (gyroRate * kGyroCorrectionP);
-        westSetpoint  += -(gyroRate * kGyroCorrectionP);
-        southSetpoint += -(gyroRate * kGyroCorrectionP);
-        eastSetpoint  += (gyroRate * kGyroCorrectionP);
+        northSetpoint += (gyroRate * kGyroCorrectionP) + (int)(headingError * kCompassCorrectionP);
+        westSetpoint  += -(gyroRate * kGyroCorrectionP) - (int)(headingError * kCompassCorrectionP);
+        southSetpoint += -(gyroRate * kGyroCorrectionP) - (int)(headingError * kCompassCorrectionP);
+        eastSetpoint  += (gyroRate * kGyroCorrectionP) + (int)(headingError * kCompassCorrectionP);
     }
     if (!m_stopped)
     {
