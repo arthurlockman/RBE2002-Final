@@ -434,7 +434,7 @@ void testCode()
 float getCurrentOrientation()
 {
     float accum = 0;
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 20; i++)
     {
         float x_value = m_compass.m.x;
         float z_value = m_compass.m.z;
@@ -446,7 +446,7 @@ float getCurrentOrientation()
 
         accum += (raw_orientation < 0) ? raw_orientation + 360.0 : raw_orientation;
     }  
-    return accum / 10.0;
+    return accum / 20.0;
 }
 
 /**
