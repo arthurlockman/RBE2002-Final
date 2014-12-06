@@ -1,11 +1,13 @@
 #include "Robotmap.h"
 
-// #define DEBUG //Comment out to disable debug messages.
+#define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
-// #define IMU //Comment out to disable IMU
+#define IMU //Comment out to disable IMU
 // #define DRIVE_PID //Comment out to disable Drive PID
 
 Servo          m_north, m_west, m_south, m_east;
+int            m_loopState = 0;
+int            m_gyroZero = 0;
 boolean        enabled = false;
 boolean        m_stopped = true;
 SingleEncoder  m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
@@ -35,6 +37,7 @@ void setup()
 
 #if defined(IMU)
     // Initialize Compass
+    Serial.println("Init IMU");
     Wire.begin();
     m_compass.init();
     m_compass.enableDefault();
@@ -54,6 +57,16 @@ void setup()
         while (1);
     }
     m_gyro.enableDefault();
+
+    Serial.println("Zeroing Gyro...");
+    for (int i = 0; i < 100; i++)
+    {
+        m_gyro.read();
+        m_gyroZero += m_gyro.g.y;
+    }
+    m_gyroZero = (int)((float)m_gyroZero / 100.0);
+    Serial.print("Gyro Y Zero: ");
+    Serial.println(m_gyroZero);
 #endif
 
     // Attach interrupt for speed-only encoders
@@ -78,7 +91,6 @@ void setup()
 
 void loop()
 {
-    followWall(1, 1);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -161,6 +173,18 @@ void loop()
     updateDrive();
 }
 
+int readGyroY()
+{
+    if (m_gyro.g.y > (m_gyroZero + 100) || m_gyro.g.y < (m_gyroZero - 100))
+    {
+        return m_gyro.g.y - m_gyroZero;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 int followWall(int side, int dir)
 {
     int driveDir;
@@ -171,47 +195,135 @@ int followWall(int side, int dir)
     {
     case 1:
         wallDist = m_rangeNorth.distance();
-        wall2Dist = (dir == 1)? m_rangeEast.distance() : m_rangeWest.distance();
-        if (wall2Dist < 6.0) { stopDrive(); return 1; }
-        else if (wallDist > 6.0 && dir == 1) { drive(45); }
-        else if (wallDist > 6.0 && dir == 0) { drive(315); }
-        else if (wallDist < 3.0 && dir == 1) { drive(135); }
-        else if (wallDist < 3.0 && dir == 0) { drive(225); }
-        else if (dir == 1) { drive(90); }
-        else if (dir == 0) { drive(270); }
+        wall2Dist = (dir == 1) ? m_rangeEast.distance() : m_rangeWest.distance();
+        if (wall2Dist < 6.0)
+        {
+            stopDrive();
+            return 1;
+        }
+        else if (wallDist > 6.0 && dir == 1)
+        {
+            drive(45);
+        }
+        else if (wallDist > 6.0 && dir == 0)
+        {
+            drive(315);
+        }
+        else if (wallDist < 3.0 && dir == 1)
+        {
+            drive(135);
+        }
+        else if (wallDist < 3.0 && dir == 0)
+        {
+            drive(225);
+        }
+        else if (dir == 1)
+        {
+            drive(90);
+        }
+        else if (dir == 0)
+        {
+            drive(270);
+        }
         break;
     case 2:
         wallDist = m_rangeWest.distance();
-        wall2Dist = (dir == 1)? m_rangeNorth.distance() : m_rangeSouth.distance();
-        if (wall2Dist < 6.0) { stopDrive(); return 1; }
-        else if (wallDist > 6.0 && dir == 1) { drive(315); }
-        else if (wallDist > 6.0 && dir == 0) { drive(225); }
-        else if (wallDist < 3.0 && dir == 1) { drive(45); }
-        else if (wallDist < 3.0 && dir == 0) { drive(135); }
-        else if (dir == 1) { drive(0); }
-        else if (dir == 0) { drive(180); }
+        wall2Dist = (dir == 1) ? m_rangeNorth.distance() : m_rangeSouth.distance();
+        if (wall2Dist < 6.0)
+        {
+            stopDrive();
+            return 1;
+        }
+        else if (wallDist > 6.0 && dir == 1)
+        {
+            drive(315);
+        }
+        else if (wallDist > 6.0 && dir == 0)
+        {
+            drive(225);
+        }
+        else if (wallDist < 3.0 && dir == 1)
+        {
+            drive(45);
+        }
+        else if (wallDist < 3.0 && dir == 0)
+        {
+            drive(135);
+        }
+        else if (dir == 1)
+        {
+            drive(0);
+        }
+        else if (dir == 0)
+        {
+            drive(180);
+        }
         break;
     case 3:
         wallDist = m_rangeSouth.distance();
-        wall2Dist = (dir == 1)? m_rangeWest.distance() : m_rangeEast.distance();
-        if (wall2Dist < 6.0) { stopDrive(); return 1; }
-        else if (wallDist > 6.0 && dir == 1) { drive(225); }
-        else if (wallDist > 6.0 && dir == 0) { drive(135); }
-        else if (wallDist < 3.0 && dir == 1) { drive(315); }
-        else if (wallDist < 3.0 && dir == 0) { drive(45); }
-        else if (dir == 1) { drive(270); }
-        else if (dir == 0) { drive(90); }
+        wall2Dist = (dir == 1) ? m_rangeWest.distance() : m_rangeEast.distance();
+        if (wall2Dist < 6.0)
+        {
+            stopDrive();
+            return 1;
+        }
+        else if (wallDist > 6.0 && dir == 1)
+        {
+            drive(225);
+        }
+        else if (wallDist > 6.0 && dir == 0)
+        {
+            drive(135);
+        }
+        else if (wallDist < 3.0 && dir == 1)
+        {
+            drive(315);
+        }
+        else if (wallDist < 3.0 && dir == 0)
+        {
+            drive(45);
+        }
+        else if (dir == 1)
+        {
+            drive(270);
+        }
+        else if (dir == 0)
+        {
+            drive(90);
+        }
         break;
     case 4:
         wallDist = m_rangeEast.distance();
-        wall2Dist = (dir == 1)? m_rangeSouth.distance() : m_rangeNorth.distance();
-        if (wall2Dist < 6.0) { stopDrive(); return 1; }
-        else if (wallDist > 6.0 && dir == 1) { drive(135); }
-        else if (wallDist > 6.0 && dir == 0) { drive(45); }
-        else if (wallDist < 3.0 && dir == 1) { drive(225); }
-        else if (wallDist < 3.0 && dir == 0) { drive(315); }
-        else if (dir == 1) { drive(180); }
-        else if (dir == 0) { drive(0); }
+        wall2Dist = (dir == 1) ? m_rangeSouth.distance() : m_rangeNorth.distance();
+        if (wall2Dist < 6.0)
+        {
+            stopDrive();
+            return 1;
+        }
+        else if (wallDist > 6.0 && dir == 1)
+        {
+            drive(135);
+        }
+        else if (wallDist > 6.0 && dir == 0)
+        {
+            drive(45);
+        }
+        else if (wallDist < 3.0 && dir == 1)
+        {
+            drive(225);
+        }
+        else if (wallDist < 3.0 && dir == 0)
+        {
+            drive(315);
+        }
+        else if (dir == 1)
+        {
+            drive(180);
+        }
+        else if (dir == 0)
+        {
+            drive(0);
+        }
         break;
     }
     return 0;
@@ -293,7 +405,7 @@ void printDebuggingMessages()
     Serial.print("X: ");
     Serial.print((int)m_gyro.g.x);
     Serial.print(" Y: ");
-    Serial.print((int)m_gyro.g.y);
+    Serial.print(readGyroY());
     Serial.print(" Z: ");
     Serial.print((int)m_gyro.g.z);
     Serial.println();
