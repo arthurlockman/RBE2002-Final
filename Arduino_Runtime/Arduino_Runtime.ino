@@ -137,26 +137,7 @@ void setup()
 
 void loop()
 {
-    // if (m_loopState == 0)
-    // {
-    //     m_loopState += followWall(1, 1);
-    // }
-    // else if (m_loopState == 1)
-    // {
-    //     m_loopState += followWall(4, 1);
-    // }
-    // else if (m_loopState == 2)
-    // {
-    //     m_loopState += followWall(3, 1);
-    // }
-    // else if (m_loopState == 3)
-    // {
-    //     m_loopState += followWall(2, 1);
-    // }
-    // else
-    // {
-    //     Serial.println("Done.");
-    // }
+    drive(0);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -236,7 +217,7 @@ void loop()
     }
     printDebuggingMessages();
     imuRoutine();
-    // updateDrive();
+    updateDrive();
 }
 
 int readGyroY()
