@@ -130,16 +130,33 @@ void setup()
     pinMode(kFanEast, OUTPUT);
     setFans(0);
 
-#if defined(DRIVE_PID)
     //Setup timer interrupts
-    Timer1.initialize(kISRRate);
-    Timer1.attachInterrupt(periodicUpdate);
-#endif
+    // Timer1.initialize(kISRRate);
+    // Timer1.attachInterrupt(imuRoutine);
 }
 
 void loop()
 {
-    drive(45);
+    // if (m_loopState == 0)
+    // {
+    //     m_loopState += followWall(1, 1);
+    // }
+    // else if (m_loopState == 1)
+    // {
+    //     m_loopState += followWall(4, 1);
+    // }
+    // else if (m_loopState == 2)
+    // {
+    //     m_loopState += followWall(3, 1);
+    // }
+    // else if (m_loopState == 3)
+    // {
+    //     m_loopState += followWall(2, 1);
+    // }
+    // else
+    // {
+    //     Serial.println("Done.");
+    // }
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -219,7 +236,7 @@ void loop()
     }
     printDebuggingMessages();
     imuRoutine();
-    updateDrive();
+    // updateDrive();
 }
 
 int readGyroY()
@@ -245,9 +262,13 @@ int followWall(int side, int dir)
     case 1:
         wallDist = m_rangeNorth.distance();
         wall2Dist = (dir == 1) ? m_rangeEast.distance() : m_rangeWest.distance();
+        Serial.print(wallDist);
+        Serial.print('\t');
+        Serial.println(wall2Dist);
         if (wall2Dist < 6.0)
         {
             stopDrive();
+            Serial.println("stopping");
             return 1;
         }
         else if (wallDist > 6.0 && dir == 1)
@@ -491,7 +512,7 @@ float getCurrentOrientation()
         float raw_orientation = atan2(z_corrected, x_corrected) * (180 / M_PI);
 
         accum += (raw_orientation < 0) ? raw_orientation + 360.0 : raw_orientation;
-    return accum / 10.0;
+        return accum / 10.0;
 #endif
 }
 
@@ -503,11 +524,6 @@ float getCurrentOrientation()
  */
 void imuRoutine()
 {
-#if defined(IMU)
-    m_compass.read();
-    m_gyro.read();
-#endif
-#if defined(OPENIMU)
     if ((millis() - timer) >= 20) // Main loop runs at 50Hz
     {
         counter++;
@@ -539,7 +555,6 @@ void imuRoutine()
 
         // printdata();
     }
-#endif
 }
 
 /**
@@ -671,6 +686,7 @@ void stopDrive()
     m_west.write(90);
     m_east.write(90);
     m_south.write(90);
+    m_stopped = true;
 #endif
 }
 
