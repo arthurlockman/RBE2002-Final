@@ -12,6 +12,49 @@
 #include "LightSensor.h"
 #include "FlameSensor.h"
 
+// OpenIMU Values
+#define ToRad(x) ((x) * 0.01745329252)  // *pi/180
+#define ToDeg(x) ((x) * 57.2957795131)  // *180/pi
+#define PI_FLOAT     3.14159265f
+#define PIBY2_FLOAT  1.5707963f
+#define GYRO_SCALE 0.07f
+#define betaDef		0.08f
+#define compassXMax 216.0f
+#define compassXMin -345.0f
+#define compassYMax 210.0f
+#define compassYMin -347.0f
+#define compassZMax 249.0f
+#define compassZMin -305.0f
+#define inverseXRange (float)(2.0 / (compassXMax - compassXMin))
+#define inverseYRange (float)(2.0 / (compassYMax - compassYMin))
+#define inverseZRange (float)(2.0 / (compassZMax - compassZMin))
+#define MAG_ADDRESS 0x1E
+#define LSM303_CRA_REG (uint8_t)0x00 
+#define LSM303_CRB_REG 0x01
+#define LSM303_MR_REG 0x02
+#define LSM303_OUT_X_H 0x03
+
+long timer, printTimer;
+float G_Dt;
+int loopCount;
+
+float q0;
+float q1;
+float q2;
+float q3;
+float beta;
+
+float magnitude;
+
+float pitch,roll,yaw;
+
+float gyroSumX,gyroSumY,gyroSumZ;
+float offSetX,offSetY,offSetZ;
+
+float floatMagX,floatMagY,floatMagZ;
+float smoothAccX,smoothAccY,smoothAccZ;
+float accToFilterX,accToFilterY,accToFilterZ;
+
 enum MotorPins
 {
 	kNorthMotor = 4,

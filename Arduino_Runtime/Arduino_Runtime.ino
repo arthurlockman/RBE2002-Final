@@ -2,7 +2,8 @@
 
 // #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
-#define IMU //Comment out to disable IMU
+// #define IMU //Comment out to disable IMU
+#define OPENIMU //Use OpenIMU Library
 // #define DRIVE_PID //Comment out to disable Drive PID
 
 Servo          m_north, m_west, m_south, m_east;
@@ -50,10 +51,10 @@ void setup()
         1001,  1794,  -253
     };
 
-    // Initialize gyro
+    // Initialize m_gyro
     if (!m_gyro.init())
     {
-        Serial.println("Failed to autodetect gyro type!");
+        Serial.println("Failed to autodetect m_gyro type!");
         while (1);
     }
     m_gyro.enableDefault();
@@ -73,6 +74,13 @@ void setup()
     Serial.println(m_gyroZero);
     Serial.print("Starting orientation: ");
     Serial.println(startOrientation);
+#endif
+#if defined(OPENIMU)
+    Wire.begin();
+    TWBR = ((F_CPU / 400000) - 16) / 2;//set the I2C speed to 400KHz
+    IMUinit();
+    printTimer = millis();
+    timer = micros();
 #endif
 
     // Attach interrupt for speed-only encoders
@@ -445,7 +453,7 @@ float getCurrentOrientation()
         float raw_orientation = atan2(z_corrected, x_corrected) * (180 / M_PI);
 
         accum += (raw_orientation < 0) ? raw_orientation + 360.0 : raw_orientation;
-    }  
+    }
     return accum / 10.0;
 }
 
@@ -460,6 +468,39 @@ void imuRoutine()
 #if defined(IMU)
     m_compass.read();
     m_gyro.read();
+#endif
+#if defined(OPENIMU)
+    if (micros() - timer >= 5000)
+    {
+        //this runs in 4ms on the MEGA 2560
+        G_Dt = (micros() - timer) / 1000000.0;
+        timer = micros();
+        m_compass.read();
+        floatMagX = ((float)m_compass.m.x - compassXMin) * inverseXRange - 1.0;
+        floatMagY = ((float)m_compass.m.y - compassYMin) * inverseYRange - 1.0;
+        floatMagZ = ((float)m_compass.m.z - compassZMin) * inverseZRange - 1.0;
+        Smoothing(&m_compass.a.x, &smoothAccX);
+        Smoothing(&m_compass.a.y, &smoothAccY);
+        Smoothing(&m_compass.a.z, &smoothAccZ);
+        accToFilterX = smoothAccX;
+        accToFilterY = smoothAccY;
+        accToFilterZ = smoothAccZ;
+        m_gyro.read();
+        AHRSupdate(&G_Dt);
+    }
+
+    if (millis() - printTimer > 50)
+    {
+        printTimer = millis();
+        GetEuler();
+        Serial.print(printTimer);
+        Serial.print(",");
+        Serial.print(pitch);
+        Serial.print(",");
+        Serial.print(roll);
+        Serial.print(",");
+        Serial.println(yaw);
+    }
 #endif
 }
 
@@ -776,4 +817,412 @@ void periodicUpdate()
         eastSpeed  = 90;
         westSpeed  = 90;
     }
+}
+
+//OpenIMU Methods
+void IMUinit()
+{
+
+    //init devices
+    m_compass.init();
+    m_gyro.init();
+
+    m_gyro.writeReg(L3G_CTRL_REG1, 0xCF);
+    m_gyro.writeReg(L3G_CTRL_REG2, 0x00);
+    m_gyro.writeReg(L3G_CTRL_REG3, 0x00);
+    m_gyro.writeReg(L3G_CTRL_REG4, 0x20); //
+    m_gyro.writeReg(L3G_CTRL_REG5, 0x02);
+
+    m_compass.writeAccReg(LSM303::CTRL_REG1_A, 0x77);//400hz all enabled
+    m_compass.writeAccReg(LSM303::CTRL_REG4_A, 0x20);//+/-8g 4mg/LSB
+
+    m_compass.writeMagReg(LSM303::CRA_REG_M, 0x1C);
+    m_compass.writeMagReg(LSM303::CRB_REG_M, 0x60);
+    m_compass.writeMagReg(LSM303::MR_REG_M, 0x00);
+
+    beta = betaDef;
+    //calculate initial quaternion
+    //take an average of the m_gyro readings to remove the bias
+
+    for (int i = 0; i < 500; i++)
+    {
+        m_gyro.read();
+        m_compass.read();
+        Smoothing(&m_compass.a.x, &smoothAccX);
+        Smoothing(&m_compass.a.y, &smoothAccY);
+        Smoothing(&m_compass.a.z, &smoothAccZ);
+        delay(3);
+    }
+    gyroSumX = 0;
+    gyroSumY = 0;
+    gyroSumZ = 0;
+    for (int i = 0; i < 500; i++)
+    {
+        m_gyro.read();
+        m_compass.read();
+        Smoothing(&m_compass.a.x, &smoothAccX);
+        Smoothing(&m_compass.a.y, &smoothAccY);
+        Smoothing(&m_compass.a.z, &smoothAccZ);
+        gyroSumX += (m_gyro.g.x);
+        gyroSumY += (m_gyro.g.y);
+        gyroSumZ += (m_gyro.g.z);
+        delay(3);
+    }
+    offSetX = gyroSumX / 500.0;
+    offSetY = gyroSumY / 500.0;
+    offSetZ = gyroSumZ / 500.0;
+    m_compass.read();
+
+    //calculate the initial quaternion
+    //these are rough values. This calibration works a lot better if the device is kept as flat as possible
+    //find the initial pitch and roll
+    pitch = ToDeg(fastAtan2(m_compass.a.x, sqrt(m_compass.a.y * m_compass.a.y + m_compass.a.z * m_compass.a.z)));
+    roll = ToDeg(fastAtan2(-1 * m_compass.a.y, sqrt(m_compass.a.x * m_compass.a.x + m_compass.a.z * m_compass.a.z)));
+
+
+    if (m_compass.a.z > 0)
+    {
+        if (m_compass.a.x > 0)
+        {
+            pitch = 180.0 - pitch;
+        }
+        else
+        {
+            pitch = -180.0 - pitch;
+        }
+        if (m_compass.a.y > 0)
+        {
+            roll = -180.0 - roll;
+        }
+        else
+        {
+            roll = 180.0 - roll;
+        }
+    }
+
+    floatMagX = (m_compass.m.x - compassXMin) * inverseXRange - 1.0;
+    floatMagY = (m_compass.m.y - compassYMin) * inverseYRange - 1.0;
+    floatMagZ = (m_compass.m.z - compassZMin) * inverseZRange - 1.0;
+    //tilt compensate the m_compass
+    float xMag = (floatMagX * cos(ToRad(pitch))) + (floatMagZ * sin(ToRad(pitch)));
+    float yMag = -1 * ((floatMagX * sin(ToRad(roll))  * sin(ToRad(pitch))) + (floatMagY * cos(ToRad(roll))) - (floatMagZ * sin(ToRad(roll)) * cos(ToRad(pitch))));
+
+    yaw = ToDeg(fastAtan2(yMag, xMag));
+
+    if (yaw < 0)
+    {
+        yaw += 360;
+    }
+    Serial.println(pitch);
+    Serial.println(roll);
+    Serial.println(yaw);
+    //calculate the rotation matrix
+    float cosPitch = cos(ToRad(pitch));
+    float sinPitch = sin(ToRad(pitch));
+
+    float cosRoll = cos(ToRad(roll));
+    float sinRoll = sin(ToRad(roll));
+
+    float cosYaw = cos(ToRad(yaw));
+    float sinYaw = sin(ToRad(yaw));
+
+    //need the transpose of the rotation matrix
+    float r11 = cosPitch * cosYaw;
+    float r21 = cosPitch * sinYaw;
+    float r31 = -1.0 * sinPitch;
+
+    float r12 = -1.0 * (cosRoll * sinYaw) + (sinRoll * sinPitch * cosYaw);
+    float r22 = (cosRoll * cosYaw) + (sinRoll * sinPitch * sinYaw);
+    float r32 = sinRoll * cosPitch;
+
+    float r13 = (sinRoll * sinYaw) + (cosRoll * sinPitch * cosYaw);
+    float r23 = -1.0 * (sinRoll * cosYaw) + (cosRoll * sinPitch * sinYaw);
+    float r33 = cosRoll * cosPitch;
+
+
+
+    //convert to quaternion
+    q0 = 0.5 * sqrt(1 + r11 + r22 + r33);
+    q1 = (r32 - r23) / (4 * q0);
+    q2 = (r13 - r31) / (4 * q0);
+    q3 = (r21 - r12) / (4 * q0);
+
+
+}
+
+void IMUupdate(float *dt)
+{
+    static float gx;
+    static float gy;
+    static float gz;
+    static float ax;
+    static float ay;
+    static float az;
+
+    static float recipNorm;
+    static float s0, s1, s2, s3;
+    static float qDot1, qDot2, qDot3, qDot4;
+    static float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 , _8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
+
+    gx = ToRad((m_gyro.g.x - offSetX) * GYRO_SCALE);
+    gy = ToRad((m_gyro.g.y - offSetY) * GYRO_SCALE);
+    gz = ToRad((m_gyro.g.z - offSetZ) * GYRO_SCALE);
+
+    ax = -1.0 * m_compass.a.x;
+    ay = -1.0 * m_compass.a.y;
+    az = -1.0 * m_compass.a.z;
+    // Rate of change of quaternion from gyroscope
+    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
+    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
+    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
+    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
+
+    magnitude = sqrt(ax * ax + ay * ay + az * az);
+    if ((magnitude > 384) || (magnitude < 128))
+    {
+        ax = 0;
+        ay = 0;
+        az = 0;
+    }
+
+    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+    if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f)))
+    {
+
+        // Normalise accelerometer measurement
+        recipNorm = invSqrt(ax * ax + ay * ay + az * az);
+        ax *= recipNorm;
+        ay *= recipNorm;
+        az *= recipNorm;
+
+        // Auxiliary variables to avoid repeated arithmetic
+        _2q0 = 2.0f * q0;
+        _2q1 = 2.0f * q1;
+        _2q2 = 2.0f * q2;
+        _2q3 = 2.0f * q3;
+        _4q0 = 4.0f * q0;
+        _4q1 = 4.0f * q1;
+        _4q2 = 4.0f * q2;
+        _8q1 = 8.0f * q1;
+        _8q2 = 8.0f * q2;
+        q0q0 = q0 * q0;
+        q1q1 = q1 * q1;
+        q2q2 = q2 * q2;
+        q3q3 = q3 * q3;
+
+        // Gradient decent algorithm corrective step
+        s0 = _4q0 * q2q2 + _2q2 * ax + _4q0 * q1q1 - _2q1 * ay;
+        s1 = _4q1 * q3q3 - _2q3 * ax + 4.0f * q0q0 * q1 - _2q0 * ay - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * az;
+        s2 = 4.0f * q0q0 * q2 + _2q0 * ax + _4q2 * q3q3 - _2q3 * ay - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * az;
+        s3 = 4.0f * q1q1 * q3 - _2q1 * ax + 4.0f * q2q2 * q3 - _2q2 * ay;
+        recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); // normalise step magnitude
+        s0 *= recipNorm;
+        s1 *= recipNorm;
+        s2 *= recipNorm;
+        s3 *= recipNorm;
+
+        // Apply feedback step
+        qDot1 -= beta * s0;
+        qDot2 -= beta * s1;
+        qDot3 -= beta * s2;
+        qDot4 -= beta * s3;
+    }
+
+    // Integrate rate of change of quaternion to yield quaternion
+    q0 += qDot1 **dt;
+    q1 += qDot2 **dt;
+    q2 += qDot3 **dt;
+    q3 += qDot4 **dt;
+
+    // Normalise quaternion
+    recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    q0 *= recipNorm;
+    q1 *= recipNorm;
+    q2 *= recipNorm;
+    q3 *= recipNorm;
+}
+
+void AHRSupdate(float *dt)
+{
+    static float gx;
+    static float gy;
+    static float gz;
+    static float ax;
+    static float ay;
+    static float az;
+    static float mx;
+    static float my;
+    static float mz;
+
+
+    static float recipNorm;
+    static float s0, s1, s2, s3;
+    static float qDot1, qDot2, qDot3, qDot4;
+    static float hx, hy;
+    static float _2q0mx, _2q0my, _2q0mz, _2q1mx, _2bx, _2bz, _4bx, _4bz, _2q0, _2q1, _2q2, _2q3, _2q0q2, _2q2q3, q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
+
+    gx = ToRad((m_gyro.g.x - offSetX) * GYRO_SCALE);
+    gy = ToRad((m_gyro.g.y - offSetY) * GYRO_SCALE);
+    gz = ToRad((m_gyro.g.z - offSetZ) * GYRO_SCALE);
+
+    ax = -1.0 * m_compass.a.x;
+    ay = -1.0 * m_compass.a.y;
+    az = -1.0 * m_compass.a.z;
+
+    mx = floatMagX;
+    my = floatMagY;
+    mz = floatMagZ;
+    // Rate of change of quaternion from gyroscope
+    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
+    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
+    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
+    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
+
+    magnitude = sqrt(ax * ax + ay * ay + az * az);
+
+    if ((magnitude > 384) || (magnitude < 128))
+    {
+        ax = 0;
+        ay = 0;
+        az = 0;
+    }
+
+    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+    if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f)))
+    {
+
+
+        // Normalise accelerometer measurement
+        recipNorm = invSqrt(ax * ax + ay * ay + az * az);
+        ax *= recipNorm;
+        ay *= recipNorm;
+        az *= recipNorm;
+        // Normalise magnetometer measurement
+        recipNorm = invSqrt(mx * mx + my * my + mz * mz);
+        mx *= recipNorm;
+        my *= recipNorm;
+        mz *= recipNorm;
+        // Auxiliary variables to avoid repeated arithmetic
+        _2q0mx = 2.0f * q0 * mx;
+        _2q0my = 2.0f * q0 * my;
+        _2q0mz = 2.0f * q0 * mz;
+        _2q1mx = 2.0f * q1 * mx;
+        _2q0 = 2.0f * q0;
+        _2q1 = 2.0f * q1;
+        _2q2 = 2.0f * q2;
+        _2q3 = 2.0f * q3;
+        _2q0q2 = 2.0f * q0 * q2;
+        _2q2q3 = 2.0f * q2 * q3;
+        q0q0 = q0 * q0;
+        q0q1 = q0 * q1;
+        q0q2 = q0 * q2;
+        q0q3 = q0 * q3;
+        q1q1 = q1 * q1;
+        q1q2 = q1 * q2;
+        q1q3 = q1 * q3;
+        q2q2 = q2 * q2;
+        q2q3 = q2 * q3;
+        q3q3 = q3 * q3;
+
+
+
+        // Reference direction of Earth's magnetic field
+        hx = mx * q0q0 - _2q0my * q3 + _2q0mz * q2 + mx * q1q1 + _2q1 * my * q2 + _2q1 * mz * q3 - mx * q2q2 - mx * q3q3;
+        hy = _2q0mx * q3 + my * q0q0 - _2q0mz * q1 + _2q1mx * q2 - my * q1q1 + my * q2q2 + _2q2 * mz * q3 - my * q3q3;
+        _2bx = sqrt(hx * hx + hy * hy);
+        _2bz = -_2q0mx * q2 + _2q0my * q1 + mz * q0q0 + _2q1mx * q3 - mz * q1q1 + _2q2 * my * q3 - mz * q2q2 + mz * q3q3;
+        _4bx = 2.0f * _2bx;
+        _4bz = 2.0f * _2bz;
+
+        // Gradient decent algorithm corrective step
+        s0 = -_2q2 * (2.0f * q1q3 - _2q0q2 - ax) + _2q1 * (2.0f * q0q1 + _2q2q3 - ay) - _2bz * q2 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q3 + _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q2 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
+        s1 = _2q3 * (2.0f * q1q3 - _2q0q2 - ax) + _2q0 * (2.0f * q0q1 + _2q2q3 - ay) - 4.0f * q1 * (1 - 2.0f * q1q1 - 2.0f * q2q2 - az) + _2bz * q3 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (_2bx * q2 + _2bz * q0) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q3 - _4bz * q1) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
+        s2 = -_2q0 * (2.0f * q1q3 - _2q0q2 - ax) + _2q3 * (2.0f * q0q1 + _2q2q3 - ay) - 4.0f * q2 * (1 - 2.0f * q1q1 - 2.0f * q2q2 - az) + (-_4bx * q2 - _2bz * q0) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (_2bx * q1 + _2bz * q3) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q0 - _4bz * q2) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
+        s3 = _2q1 * (2.0f * q1q3 - _2q0q2 - ax) + _2q2 * (2.0f * q0q1 + _2q2q3 - ay) + (-_4bx * q3 + _2bz * q1) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q0 + _2bz * q2) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q1 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
+        recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); // normalise step magnitude
+        s0 *= recipNorm;
+        s1 *= recipNorm;
+        s2 *= recipNorm;
+        s3 *= recipNorm;
+
+        // Apply feedback step
+        qDot1 -= beta * s0;
+        qDot2 -= beta * s1;
+        qDot3 -= beta * s2;
+        qDot4 -= beta * s3;
+    }
+
+    // Integrate rate of change of quaternion to yield quaternion
+    q0 += qDot1 **dt;
+    q1 += qDot2 **dt;
+    q2 += qDot3 **dt;
+    q3 += qDot4 **dt;
+
+    // Normalise quaternion
+    recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    q0 *= recipNorm;
+    q1 *= recipNorm;
+    q2 *= recipNorm;
+    q3 *= recipNorm;
+}
+
+void GetEuler(void)
+{
+    roll = ToDeg(fastAtan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2)));
+    pitch = ToDeg(asin(2 * (q0 * q2 - q3 * q1)));
+    yaw = ToDeg(fastAtan2(2 * (q0 * q3 + q1 * q2) , 1 - 2 * (q2 * q2 + q3 * q3)));
+    if (yaw < 0)
+    {
+        yaw += 360;
+    }
+
+}
+float fastAtan2( float y, float x)
+{
+    static float atan;
+    static float z;
+    if ( x == 0.0f )
+    {
+        if ( y > 0.0f ) return PIBY2_FLOAT;
+        if ( y == 0.0f ) return 0.0f;
+        return -PIBY2_FLOAT;
+    }
+    z = y / x;
+    if ( fabs( z ) < 1.0f )
+    {
+        atan = z / (1.0f + 0.28f * z * z);
+        if ( x < 0.0f )
+        {
+            if ( y < 0.0f ) return atan - PI_FLOAT;
+            return atan + PI_FLOAT;
+        }
+    }
+    else
+    {
+        atan = PIBY2_FLOAT - z / (z * z + 0.28f);
+        if ( y < 0.0f ) return atan - PI_FLOAT;
+    }
+    return atan;
+}
+
+float invSqrt(float number)
+{
+    volatile long i;
+    volatile float x, y;
+    volatile const float f = 1.5F;
+
+    x = number * 0.5F;
+    y = number;
+    i = * ( long *) &y;
+    i = 0x5f375a86 - ( i >> 1 );
+    y = * ( float *) &i;
+    y = y * ( f - ( x * y * y ) );
+    return y;
+}
+
+
+
+void Smoothing(int *raw, float *smooth)
+{
+    *smooth = (*raw * (0.15)) + (*smooth * 0.85);
 }
