@@ -18,7 +18,7 @@
 #define PI_FLOAT     3.14159265f
 #define PIBY2_FLOAT  1.5707963f
 #define GYRO_SCALE 0.07f
-#define betaDef		0.08f
+#define betaDef     0.08f
 #define compassXMax 216.0f
 #define compassXMin -345.0f
 #define compassYMax 210.0f
@@ -29,7 +29,7 @@
 #define inverseYRange (float)(2.0 / (compassYMax - compassYMin))
 #define inverseZRange (float)(2.0 / (compassZMax - compassZMin))
 #define MAG_ADDRESS 0x1E
-#define LSM303_CRA_REG (uint8_t)0x00 
+#define LSM303_CRA_REG (uint8_t)0x00
 #define LSM303_CRB_REG 0x01
 #define LSM303_MR_REG 0x02
 #define LSM303_OUT_X_H 0x03
@@ -46,67 +46,67 @@ float beta;
 
 float magnitude;
 
-float pitch,roll,yaw;
+float pitch, roll, yaw;
 
-float gyroSumX,gyroSumY,gyroSumZ;
-float offSetX,offSetY,offSetZ;
+float gyroSumX, gyroSumY, gyroSumZ;
+float offSetX, offSetY, offSetZ;
 
-float floatMagX,floatMagY,floatMagZ;
-float smoothAccX,smoothAccY,smoothAccZ;
-float accToFilterX,accToFilterY,accToFilterZ;
+float floatMagX, floatMagY, floatMagZ;
+float smoothAccX, smoothAccY, smoothAccZ;
+float accToFilterX, accToFilterY, accToFilterZ;
 
 enum MotorPins
 {
-	kNorthMotor = 4,
-	kWestMotor  = 5,
-	kSouthMotor = 6,
-	kEastMotor  = 7
+    kNorthMotor = 4,
+    kWestMotor  = 5,
+    kSouthMotor = 6,
+    kEastMotor  = 7
 };
 
 enum Direction
 {
-	kNorth,
-	kWest,
-	kSouth,
-	kEast
+    kNorth,
+    kWest,
+    kSouth,
+    kEast
 };
 
 enum InterruptPins
 {
-	kNorthEncoderA = 2,
-	kWestEncoderA  = 3,
-	kNorthEncoderB = 12,
-	kWestEncoderB  = 13,
-	kSouthEncoderA = 18,
-	kEastEncoderA  = 19
+    kNorthEncoderA = 2,
+    kWestEncoderA  = 3,
+    kNorthEncoderB = 12,
+    kWestEncoderB  = 13,
+    kSouthEncoderA = 18,
+    kEastEncoderA  = 19
 };
 
 enum DigitalPins
 {
-	kNorthRangeOut = 22,
-	kNorthRangeIn  = 23,
-	kWestRangeOut  = 24,
-	kWestRangeIn   = 25,
-	kSouthRangeOut = 26,
-	kSouthRangeIn  = 27,
-	kEastRangeOut  = 28,
-	kEastRangeIn   = 29,
-	kFanNorth      = 47,
-	kFanWest       = 49,
-	kFanSouth      = 51,
-	kFanEast       = 53
+    kNorthRangeOut = 22,
+    kNorthRangeIn  = 23,
+    kWestRangeOut  = 24,
+    kWestRangeIn   = 25,
+    kSouthRangeOut = 26,
+    kSouthRangeIn  = 27,
+    kEastRangeOut  = 28,
+    kEastRangeIn   = 29,
+    kFanNorth      = 47,
+    kFanWest       = 49,
+    kFanSouth      = 51,
+    kFanEast       = 53
 };
 
 enum AnalogPins
 {
-	kLightSensorWest  = 0,
-	kLightSensorSouth = 1,
-	kLightSensorEast  = 2,
-	kFlameSensorNorth = 7,
-	kFlameSensorWest  = 8,
-	kFlameSensorSouth = 9,
-	kFlameSensorEast  = 10,
-	kLightSensorNorth = 11
+    kLightSensorWest  = 0,
+    kLightSensorSouth = 1,
+    kLightSensorEast  = 2,
+    kFlameSensorNorth = 7,
+    kFlameSensorWest  = 8,
+    kFlameSensorSouth = 9,
+    kFlameSensorEast  = 10,
+    kLightSensorNorth = 11
 };
 
 // Number between 0 and 90
@@ -158,7 +158,7 @@ static const int kLightSensorThresh = 500;
  * @brief Applies a deadband to a number.
  * @details Applies a deadband to a number. Useful
  * for joystick input and motor output.
- * 
+ *
  * @param value The value to apply the deadband to.
  * @param deadbandUpper The upper limit of the deadband.
  * @param deadbandLower The lower limit of the deadband.
@@ -168,16 +168,16 @@ static const int kLightSensorThresh = 500;
 template <typename T>
 inline T Deadband(T value, T deadbandUpper, T deadbandLower, T deadbandMid)
 {
-	if (value <= deadbandUpper && value >= deadbandLower)
-		return deadbandMid;
-	else 
-		return value;
+    if (value <= deadbandUpper && value >= deadbandLower)
+        return deadbandMid;
+    else
+        return value;
 };
 
 inline float CalculateEncoderSpeed(int ticks, int dT, int ticksPerRev)
 {
-	// (revs per tick) * (ticks per unit time) * (unit time per minute)
-	return (1.0 / (float)ticksPerRev) * ((float)ticks / (float)dT) * (60000);
+    // (revs per tick) * (ticks per unit time) * (unit time per minute)
+    return (1.0 / (float)ticksPerRev) * ((float)ticks / (float)dT) * (60000);
 };
 
 #endif
