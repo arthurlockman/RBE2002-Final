@@ -76,11 +76,45 @@ void setup()
     Serial.println(startOrientation);
 #endif
 #if defined(OPENIMU)
-    Wire.begin();
-    TWBR = ((F_CPU / 400000) - 16) / 2;//set the I2C speed to 400KHz
-    IMUinit();
-    printTimer = millis();
-    timer = micros();
+    pinMode (STATUS_LED, OUTPUT); // Status LED
+
+    I2C_Init();
+
+    Serial.println("Pololu MinIMU-9 + Arduino AHRS");
+
+    digitalWrite(STATUS_LED, LOW);
+    delay(1500);
+
+    Accel_Init();
+    Compass_Init();
+    Gyro_Init();
+
+    delay(20);
+
+    for (int i = 0; i < 32; i++) // We take some readings...
+    {
+        Read_Gyro();
+        Read_Accel();
+        for (int y = 0; y < 6; y++) // Cumulate values
+            AN_OFFSET[y] += AN[y];
+        delay(20);
+    }
+
+    for (int y = 0; y < 6; y++)
+        AN_OFFSET[y] = AN_OFFSET[y] / 32;
+
+    AN_OFFSET[5] -= GRAVITY * SENSOR_SIGN[5];
+
+    //Serial.println("Offset:");
+    for (int y = 0; y < 6; y++)
+        Serial.println(AN_OFFSET[y]);
+
+    delay(2000);
+    digitalWrite(STATUS_LED, HIGH);
+
+    timer = millis();
+    delay(20);
+    counter = 0;
 #endif
 
     // Attach interrupt for speed-only encoders
@@ -470,35 +504,36 @@ void imuRoutine()
     m_gyro.read();
 #endif
 #if defined(OPENIMU)
-    if (micros() - timer >= 5000)
+    if ((millis() - timer) >= 20) // Main loop runs at 50Hz
     {
-        G_Dt = (micros() - timer) / 1000000.0;
-        timer = micros();
-        m_compass.read();
-        floatMagX = ((float)m_compass.m.x - compassXMin) * inverseXRange - 1.0;
-        floatMagY = ((float)m_compass.m.y - compassYMin) * inverseYRange - 1.0;
-        floatMagZ = ((float)m_compass.m.z - compassZMin) * inverseZRange - 1.0;
-        Smoothing(&m_compass.a.x, &smoothAccX);
-        Smoothing(&m_compass.a.y, &smoothAccY);
-        Smoothing(&m_compass.a.z, &smoothAccZ);
-        accToFilterX = smoothAccX;
-        accToFilterY = smoothAccY;
-        accToFilterZ = smoothAccZ;
-        m_gyro.read();
-        AHRSupdate(&G_Dt);
-    }
+        counter++;
+        timer_old = timer;
+        timer = millis();
+        if (timer > timer_old)
+            G_Dt = (timer - timer_old) / 1000.0; // Real time of loop run. We use this on the DCM algorithm (m_gyro integration time)
+        else
+            G_Dt = 0;
 
-    if (millis() - printTimer > 50)
-    {
-        printTimer = millis();
-        GetEuler();
-        Serial.print(printTimer);
-        Serial.print(",");
-        Serial.print(pitch);
-        Serial.print(",");
-        Serial.print(roll);
-        Serial.print(",");
-        Serial.println(yaw);
+        // *** DCM algorithm
+        // Data adquisition
+        Read_Gyro();   // This read m_gyro data
+        Read_Accel();     // Read I2C accelerometer
+
+        if (counter > 5)  // Read m_compass data at 10Hz... (5 loop runs)
+        {
+            counter = 0;
+            Read_Compass();    // Read I2C magnetometer
+            Compass_Heading(); // Calculate magnetic heading
+        }
+
+        // Calculations...
+        Matrix_update();
+        Normalize();
+        Drift_correction();
+        Euler_angles();
+        // ***
+
+        printdata();
     }
 #endif
 }
@@ -818,422 +853,348 @@ void periodicUpdate()
     }
 }
 
-//OpenIMU Methods
-void IMUinit()
+// OpenIMU Things
+void Compass_Heading()
 {
-    //init devices
-    m_compass.init();
-    m_gyro.init();
-
-    m_gyro.writeReg(L3G_CTRL_REG1, 0xCF);
-    m_gyro.writeReg(L3G_CTRL_REG2, 0x00);
-    m_gyro.writeReg(L3G_CTRL_REG3, 0x00);
-    m_gyro.writeReg(L3G_CTRL_REG4, 0x20); //
-    m_gyro.writeReg(L3G_CTRL_REG5, 0x02);
-
-    m_compass.writeAccReg(LSM303::CTRL_REG1_A, 0x77);//400hz all enabled
-    m_compass.writeAccReg(LSM303::CTRL_REG4_A, 0x20);//+/-8g 4mg/LSB
-
-    m_compass.writeMagReg(LSM303::CRA_REG_M, 0x1C);
-    m_compass.writeMagReg(LSM303::CRB_REG_M, 0x60);
-    m_compass.writeMagReg(LSM303::MR_REG_M, 0x00);
-
-    beta = betaDef;
-    //calculate initial quaternion
-    //take an average of the m_gyro readings to remove the bias
-
-    for (int i = 0; i < 500; i++)
-    {
-        m_gyro.read();
-        m_compass.read();
-        Smoothing(&m_compass.a.x, &smoothAccX);
-        Smoothing(&m_compass.a.y, &smoothAccY);
-        Smoothing(&m_compass.a.z, &smoothAccZ);
-        delay(3);
-    }
-    gyroSumX = 0;
-    gyroSumY = 0;
-    gyroSumZ = 0;
-    for (int i = 0; i < 500; i++)
-    {
-        m_gyro.read();
-        m_compass.read();
-        Smoothing(&m_compass.a.x, &smoothAccX);
-        Smoothing(&m_compass.a.y, &smoothAccY);
-        Smoothing(&m_compass.a.z, &smoothAccZ);
-        gyroSumX += (m_gyro.g.x);
-        gyroSumY += (m_gyro.g.y);
-        gyroSumZ += (m_gyro.g.z);
-        delay(3);
-    }
-    offSetX = gyroSumX / 500.0;
-    offSetY = gyroSumY / 500.0;
-    offSetZ = gyroSumZ / 500.0;
-    m_compass.read();
-
-    //calculate the initial quaternion
-    //these are rough values. This calibration works a lot better if the device is kept as flat as possible
-    //find the initial pitch and roll
-    pitch = ToDeg(fastAtan2(m_compass.a.x, sqrt(m_compass.a.y * m_compass.a.y + m_compass.a.z * m_compass.a.z)));
-    roll = ToDeg(fastAtan2(-1 * m_compass.a.y, sqrt(m_compass.a.x * m_compass.a.x + m_compass.a.z * m_compass.a.z)));
-
-
-    if (m_compass.a.z > 0)
-    {
-        if (m_compass.a.x > 0)
-        {
-            pitch = 180.0 - pitch;
-        }
-        else
-        {
-            pitch = -180.0 - pitch;
-        }
-        if (m_compass.a.y > 0)
-        {
-            roll = -180.0 - roll;
-        }
-        else
-        {
-            roll = 180.0 - roll;
-        }
-    }
-
-    floatMagX = (m_compass.m.x - compassXMin) * inverseXRange - 1.0;
-    floatMagY = (m_compass.m.y - compassYMin) * inverseYRange - 1.0;
-    floatMagZ = (m_compass.m.z - compassZMin) * inverseZRange - 1.0;
-    //tilt compensate the m_compass
-    float xMag = (floatMagX * cos(ToRad(pitch))) + (floatMagZ * sin(ToRad(pitch)));
-    float yMag = -1 * ((floatMagX * sin(ToRad(roll))  * sin(ToRad(pitch))) + (floatMagY * cos(ToRad(roll))) - (floatMagZ * sin(ToRad(roll)) * cos(ToRad(pitch))));
-
-    yaw = ToDeg(fastAtan2(yMag, xMag));
-
-    if (yaw < 0)
-    {
-        yaw += 360;
-    }
-    Serial.println(pitch);
-    Serial.println(roll);
-    Serial.println(yaw);
-    //calculate the rotation matrix
-    float cosPitch = cos(ToRad(pitch));
-    float sinPitch = sin(ToRad(pitch));
-
-    float cosRoll = cos(ToRad(roll));
-    float sinRoll = sin(ToRad(roll));
-
-    float cosYaw = cos(ToRad(yaw));
-    float sinYaw = sin(ToRad(yaw));
-
-    //need the transpose of the rotation matrix
-    float r11 = cosPitch * cosYaw;
-    float r21 = cosPitch * sinYaw;
-    float r31 = -1.0 * sinPitch;
-
-    float r12 = -1.0 * (cosRoll * sinYaw) + (sinRoll * sinPitch * cosYaw);
-    float r22 = (cosRoll * cosYaw) + (sinRoll * sinPitch * sinYaw);
-    float r32 = sinRoll * cosPitch;
-
-    float r13 = (sinRoll * sinYaw) + (cosRoll * sinPitch * cosYaw);
-    float r23 = -1.0 * (sinRoll * cosYaw) + (cosRoll * sinPitch * sinYaw);
-    float r33 = cosRoll * cosPitch;
-
-
-
-    //convert to quaternion
-    q0 = 0.5 * sqrt(1 + r11 + r22 + r33);
-    q1 = (r32 - r23) / (4 * q0);
-    q2 = (r13 - r31) / (4 * q0);
-    q3 = (r21 - r12) / (4 * q0);
-
-
+  float MAG_X;
+  float MAG_Y;
+  float cos_roll;
+  float sin_roll;
+  float cos_pitch;
+  float sin_pitch;
+  
+  cos_roll = cos(roll);
+  sin_roll = sin(roll);
+  cos_pitch = cos(pitch);
+  sin_pitch = sin(pitch);
+  
+  // adjust for LSM303 m_compass axis offsets/sensitivity differences by scaling to +/-0.5 range
+  c_magnetom_x = (float)(magnetom_x - SENSOR_SIGN[6]*M_X_MIN) / (M_X_MAX - M_X_MIN) - SENSOR_SIGN[6]*0.5;
+  c_magnetom_y = (float)(magnetom_y - SENSOR_SIGN[7]*M_Y_MIN) / (M_Y_MAX - M_Y_MIN) - SENSOR_SIGN[7]*0.5;
+  c_magnetom_z = (float)(magnetom_z - SENSOR_SIGN[8]*M_Z_MIN) / (M_Z_MAX - M_Z_MIN) - SENSOR_SIGN[8]*0.5;
+  
+  // Tilt compensated Magnetic filed X:
+  MAG_X = c_magnetom_x*cos_pitch+c_magnetom_y*sin_roll*sin_pitch+c_magnetom_z*cos_roll*sin_pitch;
+  // Tilt compensated Magnetic filed Y:
+  MAG_Y = c_magnetom_y*cos_roll-c_magnetom_z*sin_roll;
+  // Magnetic Heading
+  MAG_Heading = atan2(-MAG_Y,MAG_X);
 }
 
-void IMUupdate(float *dt)
+void Normalize(void)
 {
-    static float gx;
-    static float gy;
-    static float gz;
-    static float ax;
-    static float ay;
-    static float az;
+  float error=0;
+  float temporary[3][3];
+  float renorm=0;
+  
+  error= -Vector_Dot_Product(&DCM_Matrix[0][0],&DCM_Matrix[1][0])*.5; //eq.19
 
-    static float recipNorm;
-    static float s0, s1, s2, s3;
-    static float qDot1, qDot2, qDot3, qDot4;
-    static float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 , _8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
-
-    gx = ToRad((m_gyro.g.x - offSetX) * GYRO_SCALE);
-    gy = ToRad((m_gyro.g.y - offSetY) * GYRO_SCALE);
-    gz = ToRad((m_gyro.g.z - offSetZ) * GYRO_SCALE);
-
-    ax = -1.0 * m_compass.a.x;
-    ay = -1.0 * m_compass.a.y;
-    az = -1.0 * m_compass.a.z;
-    // Rate of change of quaternion from gyroscope
-    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
-    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
-    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
-    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
-
-    magnitude = sqrt(ax * ax + ay * ay + az * az);
-    if ((magnitude > 384) || (magnitude < 128))
-    {
-        ax = 0;
-        ay = 0;
-        az = 0;
-    }
-
-    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-    if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f)))
-    {
-
-        // Normalise accelerometer measurement
-        recipNorm = invSqrt(ax * ax + ay * ay + az * az);
-        ax *= recipNorm;
-        ay *= recipNorm;
-        az *= recipNorm;
-
-        // Auxiliary variables to avoid repeated arithmetic
-        _2q0 = 2.0f * q0;
-        _2q1 = 2.0f * q1;
-        _2q2 = 2.0f * q2;
-        _2q3 = 2.0f * q3;
-        _4q0 = 4.0f * q0;
-        _4q1 = 4.0f * q1;
-        _4q2 = 4.0f * q2;
-        _8q1 = 8.0f * q1;
-        _8q2 = 8.0f * q2;
-        q0q0 = q0 * q0;
-        q1q1 = q1 * q1;
-        q2q2 = q2 * q2;
-        q3q3 = q3 * q3;
-
-        // Gradient decent algorithm corrective step
-        s0 = _4q0 * q2q2 + _2q2 * ax + _4q0 * q1q1 - _2q1 * ay;
-        s1 = _4q1 * q3q3 - _2q3 * ax + 4.0f * q0q0 * q1 - _2q0 * ay - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * az;
-        s2 = 4.0f * q0q0 * q2 + _2q0 * ax + _4q2 * q3q3 - _2q3 * ay - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * az;
-        s3 = 4.0f * q1q1 * q3 - _2q1 * ax + 4.0f * q2q2 * q3 - _2q2 * ay;
-        recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); // normalise step magnitude
-        s0 *= recipNorm;
-        s1 *= recipNorm;
-        s2 *= recipNorm;
-        s3 *= recipNorm;
-
-        // Apply feedback step
-        qDot1 -= beta * s0;
-        qDot2 -= beta * s1;
-        qDot3 -= beta * s2;
-        qDot4 -= beta * s3;
-    }
-
-    // Integrate rate of change of quaternion to yield quaternion
-    q0 += qDot1 **dt;
-    q1 += qDot2 **dt;
-    q2 += qDot3 **dt;
-    q3 += qDot4 **dt;
-
-    // Normalise quaternion
-    recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
-    q0 *= recipNorm;
-    q1 *= recipNorm;
-    q2 *= recipNorm;
-    q3 *= recipNorm;
+  Vector_Scale(&temporary[0][0], &DCM_Matrix[1][0], error); //eq.19
+  Vector_Scale(&temporary[1][0], &DCM_Matrix[0][0], error); //eq.19
+  
+  Vector_Add(&temporary[0][0], &temporary[0][0], &DCM_Matrix[0][0]);//eq.19
+  Vector_Add(&temporary[1][0], &temporary[1][0], &DCM_Matrix[1][0]);//eq.19
+  
+  Vector_Cross_Product(&temporary[2][0],&temporary[0][0],&temporary[1][0]); // c= a x b //eq.20
+  
+  renorm= .5 *(3 - Vector_Dot_Product(&temporary[0][0],&temporary[0][0])); //eq.21
+  Vector_Scale(&DCM_Matrix[0][0], &temporary[0][0], renorm);
+  
+  renorm= .5 *(3 - Vector_Dot_Product(&temporary[1][0],&temporary[1][0])); //eq.21
+  Vector_Scale(&DCM_Matrix[1][0], &temporary[1][0], renorm);
+  
+  renorm= .5 *(3 - Vector_Dot_Product(&temporary[2][0],&temporary[2][0])); //eq.21
+  Vector_Scale(&DCM_Matrix[2][0], &temporary[2][0], renorm);
 }
 
-void AHRSupdate(float *dt)
+/**************************************************/
+void Drift_correction(void)
 {
-    static float gx;
-    static float gy;
-    static float gz;
-    static float ax;
-    static float ay;
-    static float az;
-    static float mx;
-    static float my;
-    static float mz;
+  float mag_heading_x;
+  float mag_heading_y;
+  float errorCourse;
+  //Compensation the Roll, Pitch and Yaw drift. 
+  static float Scaled_Omega_P[3];
+  static float Scaled_Omega_I[3];
+  float Accel_magnitude;
+  float Accel_weight;
+  
+  
+  //*****Roll and Pitch***************
 
+  // Calculate the magnitude of the accelerometer vector
+  Accel_magnitude = sqrt(Accel_Vector[0]*Accel_Vector[0] + Accel_Vector[1]*Accel_Vector[1] + Accel_Vector[2]*Accel_Vector[2]);
+  Accel_magnitude = Accel_magnitude / GRAVITY; // Scale to gravity.
+  // Dynamic weighting of accelerometer info (reliability filter)
+  // Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
+  Accel_weight = constrain(1 - 2*abs(1 - Accel_magnitude),0,1);  //  
 
-    static float recipNorm;
-    static float s0, s1, s2, s3;
-    static float qDot1, qDot2, qDot3, qDot4;
-    static float hx, hy;
-    static float _2q0mx, _2q0my, _2q0mz, _2q1mx, _2bx, _2bz, _4bx, _4bz, _2q0, _2q1, _2q2;
-    static float _2q3, _2q0q2, _2q2q3, q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
+  Vector_Cross_Product(&errorRollPitch[0],&Accel_Vector[0],&DCM_Matrix[2][0]); //adjust the ground of reference
+  Vector_Scale(&Omega_P[0],&errorRollPitch[0],Kp_ROLLPITCH*Accel_weight);
+  
+  Vector_Scale(&Scaled_Omega_I[0],&errorRollPitch[0],Ki_ROLLPITCH*Accel_weight);
+  Vector_Add(Omega_I,Omega_I,Scaled_Omega_I);     
+  
+  //*****YAW***************
+  // We make the m_gyro YAW drift correction based on m_compass magnetic heading
+ 
+  mag_heading_x = cos(MAG_Heading);
+  mag_heading_y = sin(MAG_Heading);
+  errorCourse=(DCM_Matrix[0][0]*mag_heading_y) - (DCM_Matrix[1][0]*mag_heading_x);  //Calculating YAW error
+  Vector_Scale(errorYaw,&DCM_Matrix[2][0],errorCourse); //Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
+  
+  Vector_Scale(&Scaled_Omega_P[0],&errorYaw[0],Kp_YAW);//.01proportional of YAW.
+  Vector_Add(Omega_P,Omega_P,Scaled_Omega_P);//Adding  Proportional.
+  
+  Vector_Scale(&Scaled_Omega_I[0],&errorYaw[0],Ki_YAW);//.00001Integrator
+  Vector_Add(Omega_I,Omega_I,Scaled_Omega_I);//adding integrator to the Omega_I
+}
+/**************************************************/
+/*
+void Accel_adjust(void)
+{
+ Accel_Vector[1] += Accel_Scale(speed_3d*Omega[2]);  // Centrifugal force on Acc_y = GPS_speed*GyroZ
+ Accel_Vector[2] -= Accel_Scale(speed_3d*Omega[1]);  // Centrifugal force on Acc_z = GPS_speed*GyroY 
+}
+*/
+/**************************************************/
 
-    gx = ToRad((m_gyro.g.x - offSetX) * GYRO_SCALE);
-    gy = ToRad((m_gyro.g.y - offSetY) * GYRO_SCALE);
-    gz = ToRad((m_gyro.g.z - offSetZ) * GYRO_SCALE);
+void Matrix_update(void)
+{
+  Gyro_Vector[0]=Gyro_Scaled_X(gyro_x); //m_gyro x roll
+  Gyro_Vector[1]=Gyro_Scaled_Y(gyro_y); //m_gyro y pitch
+  Gyro_Vector[2]=Gyro_Scaled_Z(gyro_z); //m_gyro Z yaw
+  
+  Accel_Vector[0]=accel_x;
+  Accel_Vector[1]=accel_y;
+  Accel_Vector[2]=accel_z;
+    
+  Vector_Add(&Omega[0], &Gyro_Vector[0], &Omega_I[0]);  //adding proportional term
+  Vector_Add(&Omega_Vector[0], &Omega[0], &Omega_P[0]); //adding Integrator term
 
-    ax = -1.0 * m_compass.a.x;
-    ay = -1.0 * m_compass.a.y;
-    az = -1.0 * m_compass.a.z;
+  //Accel_adjust();    //Remove centrifugal acceleration.   We are not using this function in this version - we have no speed measurement
+  
+ #if OUTPUTMODE==1         
+  Update_Matrix[0][0]=0;
+  Update_Matrix[0][1]=-G_Dt*Omega_Vector[2];//-z
+  Update_Matrix[0][2]=G_Dt*Omega_Vector[1];//y
+  Update_Matrix[1][0]=G_Dt*Omega_Vector[2];//z
+  Update_Matrix[1][1]=0;
+  Update_Matrix[1][2]=-G_Dt*Omega_Vector[0];//-x
+  Update_Matrix[2][0]=-G_Dt*Omega_Vector[1];//-y
+  Update_Matrix[2][1]=G_Dt*Omega_Vector[0];//x
+  Update_Matrix[2][2]=0;
+ #else                    // Uncorrected data (no drift correction)
+  Update_Matrix[0][0]=0;
+  Update_Matrix[0][1]=-G_Dt*Gyro_Vector[2];//-z
+  Update_Matrix[0][2]=G_Dt*Gyro_Vector[1];//y
+  Update_Matrix[1][0]=G_Dt*Gyro_Vector[2];//z
+  Update_Matrix[1][1]=0;
+  Update_Matrix[1][2]=-G_Dt*Gyro_Vector[0];
+  Update_Matrix[2][0]=-G_Dt*Gyro_Vector[1];
+  Update_Matrix[2][1]=G_Dt*Gyro_Vector[0];
+  Update_Matrix[2][2]=0;
+ #endif
 
-    mx = floatMagX;
-    my = floatMagY;
-    mz = floatMagZ;
-    // Rate of change of quaternion from gyroscope
-    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
-    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
-    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
-    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
+  Matrix_Multiply(DCM_Matrix,Update_Matrix,Temporary_Matrix); //a*b=c
 
-    magnitude = sqrt(ax * ax + ay * ay + az * az);
-
-    if ((magnitude > 384) || (magnitude < 128))
+  for(int x=0; x<3; x++) //Matrix Addition (update)
+  {
+    for(int y=0; y<3; y++)
     {
-        ax = 0;
-        ay = 0;
-        az = 0;
-    }
-
-    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-    if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f)))
-    {
-
-
-        // Normalise accelerometer measurement
-        recipNorm = invSqrt(ax * ax + ay * ay + az * az);
-        ax *= recipNorm;
-        ay *= recipNorm;
-        az *= recipNorm;
-        // Normalise magnetometer measurement
-        recipNorm = invSqrt(mx * mx + my * my + mz * mz);
-        mx *= recipNorm;
-        my *= recipNorm;
-        mz *= recipNorm;
-        // Auxiliary variables to avoid repeated arithmetic
-        _2q0mx = 2.0f * q0 * mx;
-        _2q0my = 2.0f * q0 * my;
-        _2q0mz = 2.0f * q0 * mz;
-        _2q1mx = 2.0f * q1 * mx;
-        _2q0 = 2.0f * q0;
-        _2q1 = 2.0f * q1;
-        _2q2 = 2.0f * q2;
-        _2q3 = 2.0f * q3;
-        _2q0q2 = 2.0f * q0 * q2;
-        _2q2q3 = 2.0f * q2 * q3;
-        q0q0 = q0 * q0;
-        q0q1 = q0 * q1;
-        q0q2 = q0 * q2;
-        q0q3 = q0 * q3;
-        q1q1 = q1 * q1;
-        q1q2 = q1 * q2;
-        q1q3 = q1 * q3;
-        q2q2 = q2 * q2;
-        q2q3 = q2 * q3;
-        q3q3 = q3 * q3;
-
-
-
-        // Reference direction of Earth's magnetic field
-        hx = mx * q0q0 - _2q0my * q3 + _2q0mz * q2 + mx * q1q1 + _2q1 * my * q2 + _2q1 * mz * q3 - mx * q2q2 - mx * q3q3;
-        hy = _2q0mx * q3 + my * q0q0 - _2q0mz * q1 + _2q1mx * q2 - my * q1q1 + my * q2q2 + _2q2 * mz * q3 - my * q3q3;
-        _2bx = sqrt(hx * hx + hy * hy);
-        _2bz = -_2q0mx * q2 + _2q0my * q1 + mz * q0q0 + _2q1mx * q3 - mz * q1q1 + _2q2 * my * q3 - mz * q2q2 + mz * q3q3;
-        _4bx = 2.0f * _2bx;
-        _4bz = 2.0f * _2bz;
-
-        // Gradient decent algorithm corrective step
-        s0 = -_2q2 * (2.0f * q1q3 - _2q0q2 - ax) + _2q1 * (2.0f * q0q1 + _2q2q3 - ay) -
-             _2bz * q2 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) +
-             (-_2bx * q3 + _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) +
-             _2bx * q2 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
-        s1 = _2q3 * (2.0f * q1q3 - _2q0q2 - ax) + _2q0 * (2.0f * q0q1 + _2q2q3 - ay) -
-             4.0f * q1 * (1 - 2.0f * q1q1 - 2.0f * q2q2 - az) + _2bz * q3 * (_2bx * (0.5f - q2q2 - q3q3) +
-                     _2bz * (q1q3 - q0q2) - mx) + (_2bx * q2 + _2bz * q0) * (_2bx * (q1q2 - q0q3) + _2bz *
-                             (q0q1 + q2q3) - my) + (_2bx * q3 - _4bz * q1) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
-        s2 = -_2q0 * (2.0f * q1q3 - _2q0q2 - ax) + _2q3 * (2.0f * q0q1 + _2q2q3 - ay) - 4.0f * q2 *
-             (1 - 2.0f * q1q1 - 2.0f * q2q2 - az) + (-_4bx * q2 - _2bz * q0) * (_2bx * (0.5f - q2q2 - q3q3)
-                     + _2bz * (q1q3 - q0q2) - mx) + (_2bx * q1 + _2bz * q3) * (_2bx * (q1q2 - q0q3) + _2bz *
-                             (q0q1 + q2q3) - my) + (_2bx * q0 - _4bz * q2) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
-        s3 = _2q1 * (2.0f * q1q3 - _2q0q2 - ax) + _2q2 * (2.0f * q0q1 + _2q2q3 - ay) + (-_4bx * q3 + _2bz * q1) *
-             (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q0 + _2bz * q2) *
-             (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q1 * (_2bx * (q0q2 + q1q3) +
-                     _2bz * (0.5f - q1q1 - q2q2) - mz);
-        recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); // normalise step magnitude
-        s0 *= recipNorm;
-        s1 *= recipNorm;
-        s2 *= recipNorm;
-        s3 *= recipNorm;
-
-        // Apply feedback step
-        qDot1 -= beta * s0;
-        qDot2 -= beta * s1;
-        qDot3 -= beta * s2;
-        qDot4 -= beta * s3;
-    }
-
-    // Integrate rate of change of quaternion to yield quaternion
-    q0 += qDot1 **dt;
-    q1 += qDot2 **dt;
-    q2 += qDot3 **dt;
-    q3 += qDot4 **dt;
-
-    // Normalise quaternion
-    recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
-    q0 *= recipNorm;
-    q1 *= recipNorm;
-    q2 *= recipNorm;
-    q3 *= recipNorm;
+      DCM_Matrix[x][y]+=Temporary_Matrix[x][y];
+    } 
+  }
 }
 
-void GetEuler(void)
+void Euler_angles(void)
 {
-    roll = ToDeg(fastAtan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2)));
-    pitch = ToDeg(asin(2 * (q0 * q2 - q3 * q1)));
-    yaw = ToDeg(fastAtan2(2 * (q0 * q3 + q1 * q2) , 1 - 2 * (q2 * q2 + q3 * q3)));
-    if (yaw < 0)
-    {
-        yaw += 360;
-    }
-
-}
-float fastAtan2( float y, float x)
-{
-    static float atan;
-    static float z;
-    if ( x == 0.0f )
-    {
-        if ( y > 0.0f ) return PIBY2_FLOAT;
-        if ( y == 0.0f ) return 0.0f;
-        return -PIBY2_FLOAT;
-    }
-    z = y / x;
-    if ( fabs( z ) < 1.0f )
-    {
-        atan = z / (1.0f + 0.28f * z * z);
-        if ( x < 0.0f )
-        {
-            if ( y < 0.0f ) return atan - PI_FLOAT;
-            return atan + PI_FLOAT;
-        }
-    }
-    else
-    {
-        atan = PIBY2_FLOAT - z / (z * z + 0.28f);
-        if ( y < 0.0f ) return atan - PI_FLOAT;
-    }
-    return atan;
+  pitch = -asin(DCM_Matrix[2][0]);
+  roll = atan2(DCM_Matrix[2][1],DCM_Matrix[2][2]);
+  yaw = atan2(DCM_Matrix[1][0],DCM_Matrix[0][0]);
 }
 
-float invSqrt(float number)
+void I2C_Init()
 {
-    volatile long i;
-    volatile float x, y;
-    volatile const float f = 1.5F;
-
-    x = number * 0.5F;
-    y = number;
-    i = * ( long *) &y;
-    i = 0x5f375a86 - ( i >> 1 );
-    y = * ( float *) &i;
-    y = y * ( f - ( x * y * y ) );
-    return y;
+  Wire.begin();
 }
 
-
-
-void Smoothing(int *raw, float *smooth)
+void Gyro_Init()
 {
-    *smooth = (*raw * (0.15)) + (*smooth * 0.85);
+  m_gyro.init();
+  m_gyro.writeReg(L3G_CTRL_REG4, 0x20); // 2000 dps full scale
+  m_gyro.writeReg(L3G_CTRL_REG1, 0x0F); // normal power mode, all axes enabled, 100 Hz
+}
+
+void Read_Gyro()
+{
+  m_gyro.read();
+  
+  AN[0] = m_gyro.g.x;
+  AN[1] = m_gyro.g.y;
+  AN[2] = m_gyro.g.z;
+  gyro_x = SENSOR_SIGN[0] * (AN[0] - AN_OFFSET[0]);
+  gyro_y = SENSOR_SIGN[1] * (AN[1] - AN_OFFSET[1]);
+  gyro_z = SENSOR_SIGN[2] * (AN[2] - AN_OFFSET[2]);
+}
+
+void Accel_Init()
+{
+  m_compass.init();
+  m_compass.enableDefault();
+  switch (m_compass.getDeviceType())
+  {
+    case LSM303::device_D:
+      m_compass.writeReg(LSM303::CTRL2, 0x18); // 8 g full scale: AFS = 011
+      break;
+    case LSM303::device_DLHC:
+      m_compass.writeReg(LSM303::CTRL_REG4_A, 0x28); // 8 g full scale: FS = 10; high resolution output mode
+      break;
+    default: // DLM, DLH
+      m_compass.writeReg(LSM303::CTRL_REG4_A, 0x30); // 8 g full scale: FS = 11
+  }
+}
+
+// Reads x,y and z accelerometer registers
+void Read_Accel()
+{
+  m_compass.readAcc();
+  
+  AN[3] = m_compass.a.x >> 4; // shift left 4 bits to use 12-bit representation (1 g = 256)
+  AN[4] = m_compass.a.y >> 4;
+  AN[5] = m_compass.a.z >> 4;
+  accel_x = SENSOR_SIGN[3] * (AN[3] - AN_OFFSET[3]);
+  accel_y = SENSOR_SIGN[4] * (AN[4] - AN_OFFSET[4]);
+  accel_z = SENSOR_SIGN[5] * (AN[5] - AN_OFFSET[5]);
+}
+
+void Compass_Init()
+{
+  // doesn't need to do anything because Accel_Init() should have already called m_compass.enableDefault()
+}
+
+void Read_Compass()
+{
+  m_compass.readMag();
+  
+  magnetom_x = SENSOR_SIGN[6] * m_compass.m.x;
+  magnetom_y = SENSOR_SIGN[7] * m_compass.m.y;
+  magnetom_z = SENSOR_SIGN[8] * m_compass.m.z;
+}
+
+void printdata(void)
+{    
+      Serial.print("!");
+
+      #if PRINT_EULER == 1
+      Serial.print("ANG:");
+      Serial.print(ToDeg(roll));
+      Serial.print(",");
+      Serial.print(ToDeg(pitch));
+      Serial.print(",");
+      Serial.print(ToDeg(yaw));
+      #endif      
+      #if PRINT_ANALOGS==1
+      Serial.print(",AN:");
+      Serial.print(AN[0]);  //(int)read_adc(0)
+      Serial.print(",");
+      Serial.print(AN[1]);
+      Serial.print(",");
+      Serial.print(AN[2]);  
+      Serial.print(",");
+      Serial.print(AN[3]);
+      Serial.print (",");
+      Serial.print(AN[4]);
+      Serial.print (",");
+      Serial.print(AN[5]);
+      Serial.print(",");
+      Serial.print(c_magnetom_x);
+      Serial.print (",");
+      Serial.print(c_magnetom_y);
+      Serial.print (",");
+      Serial.print(c_magnetom_z);
+      #endif
+      /*#if PRINT_DCM == 1
+      Serial.print (",DCM:");
+      Serial.print(convert_to_dec(DCM_Matrix[0][0]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[0][1]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[0][2]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[1][0]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[1][1]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[1][2]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[2][0]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[2][1]));
+      Serial.print (",");
+      Serial.print(convert_to_dec(DCM_Matrix[2][2]));
+      #endif*/
+      Serial.println();    
+      
+}
+
+long convert_to_dec(float x)
+{
+  return x*10000000;
+}
+
+float Vector_Dot_Product(float vector1[3],float vector2[3])
+{
+  float op=0;
+  
+  for(int c=0; c<3; c++)
+  {
+  op+=vector1[c]*vector2[c];
+  }
+  
+  return op; 
+}
+
+//Computes the cross product of two vectors
+void Vector_Cross_Product(float vectorOut[3], float v1[3],float v2[3])
+{
+  vectorOut[0]= (v1[1]*v2[2]) - (v1[2]*v2[1]);
+  vectorOut[1]= (v1[2]*v2[0]) - (v1[0]*v2[2]);
+  vectorOut[2]= (v1[0]*v2[1]) - (v1[1]*v2[0]);
+}
+
+//Multiply the vector by a scalar. 
+void Vector_Scale(float vectorOut[3],float vectorIn[3], float scale2)
+{
+  for(int c=0; c<3; c++)
+  {
+   vectorOut[c]=vectorIn[c]*scale2; 
+  }
+}
+
+void Vector_Add(float vectorOut[3],float vectorIn1[3], float vectorIn2[3])
+{
+  for(int c=0; c<3; c++)
+  {
+     vectorOut[c]=vectorIn1[c]+vectorIn2[c];
+  }
+}
+
+void Matrix_Multiply(float a[3][3], float b[3][3],float mat[3][3])
+{
+  float op[3]; 
+  for(int x=0; x<3; x++)
+  {
+    for(int y=0; y<3; y++)
+    {
+      for(int w=0; w<3; w++)
+      {
+       op[w]=a[x][w]*b[w][y];
+      } 
+      mat[x][y]=0;
+      mat[x][y]=op[0]+op[1]+op[2];
+      
+      float test=mat[x][y];
+    }
+  }
 }
