@@ -7,9 +7,9 @@
     "url": "https://github.com/arthurlockman/RBE2002-Final.git"
   },
   "dependencies": {
-    "express": "^4.10.2",
-    "moment": "^2.8.4",
-    "serialport": "^1.4.6",
-    "socket.io": "^1.2.0"
+    "express": "~4.10.4",
+    "moment": "~2.8.4",
+    "serialport": "~1.4.6",
+    "socket.io": "~1.2.1"
   }
 }
