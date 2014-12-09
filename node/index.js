@@ -9,6 +9,30 @@ var serialPort = new SerialPort("/dev/ttyACM0", {
 });
 var moment = require('moment');
 
+var sudo = require('sudo');
+var sudo_options = {
+    cachePassword: true,
+    prompt: 'Password, yo: '
+}
+
+var imuprocess = sudo(['minimu9-ahrs', '--output', 'euler', '-b', '/dev/i2c-1'], sudo_options);
+imuprocess.stderr.on('data', function(data) {
+    console.log(data.toString());
+});
+imuprocess.stdout.on('data', function(data) {
+    console.log(data.toString());
+})
+
+// var exec = require('child_process').exec;
+// var imuprocess = exec('ping calculon.res.wpi.net');
+
+// imuprocess.stdout.on('data', function(data) {
+//     console.log('stdout: ' + data);
+// });
+// imuprocess.stderr.on('data', function(data) {
+//     console.log('stderr: ' + data);
+// });
+
 serialPort.on("open", function() {
     console.log("port open");
     serialConnected = true;
