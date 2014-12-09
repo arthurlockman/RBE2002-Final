@@ -214,6 +214,10 @@ void loop()
         {
             setFans(0);
         }
+        else
+        {
+            imuRotation = atof(command.c_str());
+        }
     }
     printDebuggingMessages();
     imuRoutine();
