@@ -3,7 +3,7 @@
 // #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
 // #define IMU //Comment out to disable IMU
-#define OPENIMU //Use OpenIMU Library
+// #define OPENIMU //Use OpenIMU Library
 // #define DRIVE_PID //Comment out to disable Drive PID
 
 Servo          m_north, m_west, m_south, m_east;
@@ -498,6 +498,7 @@ float getCurrentOrientation()
 
         accum += (raw_orientation < 0) ? raw_orientation + 360.0 : raw_orientation;
         return accum / 10.0;
+    }
 #endif
 }
 
