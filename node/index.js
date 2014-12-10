@@ -23,11 +23,10 @@ imuprocess.stderr.on('data', function(data) {
 imuprocess.stdout.on('data', function(data) {
     if (readingCounter < 400) {
         readingCounter++;
-    } else if (readingCounter % 5 == 0) {
-        serialPort.write("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
-        readingCounter = 0;
     } else {
-        readingCounter++;
+        serialPort.write("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
+        io.emit('heading' + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]));
+        //console.log("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
     }
 })
 
