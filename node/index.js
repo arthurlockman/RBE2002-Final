@@ -15,12 +15,18 @@ var sudo_options = {
     prompt: 'Password, yo: '
 }
 
+var readingCounter = 0
 var imuprocess = sudo(['minimu9-ahrs', '--output', 'euler', '-b', '/dev/i2c-1'], sudo_options);
 imuprocess.stderr.on('data', function(data) {
     console.log(data.toString());
 });
 imuprocess.stdout.on('data', function(data) {
-    console.log(data.toString());
+    if (readingCounter < 400) {
+        //console.log(readingCounter + ": " + data.toString());
+        readingCounter++;
+    } else {
+        serialPort.write(parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
+    }
 })
 
 // var exec = require('child_process').exec;
