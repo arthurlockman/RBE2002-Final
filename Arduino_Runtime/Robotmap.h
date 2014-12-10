@@ -3,10 +3,7 @@
 
 #include "Servo.h"
 #include "math.h"
-#include "LSM303.h"
-#include "L3G.h"
 #include "SingleEncoder.h"
-#include <Wire.h>
 #include "TimerOne.h"
 #include "Ultrasonic.h"
 #include "LightSensor.h"
