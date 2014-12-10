@@ -165,14 +165,6 @@ enum InterruptPins
 
 enum DigitalPins
 {
-    kNorthRangeOut = 22,
-    kNorthRangeIn  = 23,
-    kWestRangeOut  = 24,
-    kWestRangeIn   = 25,
-    kSouthRangeOut = 26,
-    kSouthRangeIn  = 27,
-    kEastRangeOut  = 28,
-    kEastRangeIn   = 29,
     kFanNorth      = 47,
     kFanWest       = 49,
     kFanSouth      = 51,
@@ -184,10 +176,14 @@ enum AnalogPins
     kLightSensorWest  = 0,
     kLightSensorSouth = 1,
     kLightSensorEast  = 2,
-    kFlameSensorNorth = 7,
-    kFlameSensorWest  = 8,
-    kFlameSensorSouth = 9,
-    kFlameSensorEast  = 10,
+    kFlameSensorNorth = 3,
+    kFlameSensorWest  = 4,
+    kFlameSensorSouth = 5,
+    kFlameSensorEast  = 6,
+    kEastRangeOut     = 7,
+    kSouthRangeOut    = 8,
+    kWestRangeOut     = 9,
+    kNorthRangeOut    = 10,
     kLightSensorNorth = 11
 };
 

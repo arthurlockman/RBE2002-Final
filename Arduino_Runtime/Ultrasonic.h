@@ -9,12 +9,11 @@
 
 class Ultrasonic {
 public:
-  Ultrasonic(int pingPin, int echoPin);
+  Ultrasonic(int pingPin);
   float distance();
   float calc();
 private:
   int _pingPin;
-  int _echoPin;
 };
 
 #endif

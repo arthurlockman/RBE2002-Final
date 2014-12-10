@@ -15,10 +15,10 @@ SingleEncoder  m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
 SingleEncoder  m_encoderWest(kWestEncoderA, kSingleEncTicksPerRev);
 SingleEncoder  m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
 SingleEncoder  m_encoderSouth(kSouthEncoderA, kSingleEncTicksPerRev);
-Ultrasonic     m_rangeNorth(kNorthRangeIn, kNorthRangeOut);
-Ultrasonic     m_rangeWest(kWestRangeIn, kWestRangeOut);
-Ultrasonic     m_rangeSouth(kSouthRangeIn, kSouthRangeOut);
-Ultrasonic     m_rangeEast(kEastRangeIn, kEastRangeOut);
+Ultrasonic     m_rangeNorth(kNorthRangeOut);
+Ultrasonic     m_rangeWest(kWestRangeOut);
+Ultrasonic     m_rangeSouth(kSouthRangeOut);
+Ultrasonic     m_rangeEast(kEastRangeOut);
 LightSensor    m_lightNorth(kLightSensorNorth, kLightSensorThresh);
 LightSensor    m_lightWest(kLightSensorWest, kLightSensorThresh);
 LightSensor    m_lightSouth(kLightSensorSouth, kLightSensorThresh);
@@ -54,6 +54,14 @@ void setup()
 
 void loop()
 {
+    Serial.print(m_rangeNorth.distance());
+    Serial.print('\t');
+    Serial.print(m_rangeWest.distance());
+    Serial.print('\t');
+    Serial.print(m_rangeSouth.distance());
+    Serial.print('\t');
+    Serial.println(m_rangeEast.distance());
+    delay(10);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');

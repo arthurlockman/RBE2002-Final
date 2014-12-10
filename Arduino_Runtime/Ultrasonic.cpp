@@ -7,33 +7,13 @@
 #include "Ultrasonic.h"
 
 
-Ultrasonic::Ultrasonic(int pingPin, int echoPin) {
-  pinMode(pingPin, OUTPUT);
-  pinMode(echoPin, INPUT);
+Ultrasonic::Ultrasonic(int pingPin) {
 
   _pingPin = pingPin;
-  _echoPin = echoPin;
 }
 
 float Ultrasonic::calc() {
-//pulse
-  //make sure pin is low
-  digitalWrite(_pingPin, LOW);
-  //pull high to start the pulse
-  digitalWrite(_pingPin, HIGH);
-  //250us pulse according to VEX datasheets
-  delayMicroseconds(250);
-  //pull back low
-  digitalWrite(_pingPin, LOW);
-
-  //measure the length of the high pulse
-  //goes low when the ping returns
-  long pulses = pulseIn(_echoPin, HIGH);
-
-  //speed_of_sound/2 * time * 12in/ft
-  float dist = ( (567.5 * ( (float)pulses/1000000)) * 12.0);
-
-  return dist;
+  return (float)analogRead(_pingPin) * (5.0/1023.0)*(1.0/.0098);
 
 }
 
@@ -43,8 +23,7 @@ float Ultrasonic::distance() {
   //take 5 samples
   for(int i = 0; i < 5; i++) {
 	avgDist += calc();
-	//wait 10ms -> otherwist pulseIn times out
-	delay(20);
+  avgDist += 2.5;
   }
   //divide by 5
   avgDist /= 5;
