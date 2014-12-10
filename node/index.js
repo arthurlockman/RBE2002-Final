@@ -24,7 +24,7 @@ imuprocess.stdout.on('data', function(data) {
     if (readingCounter < 400) {
         readingCounter++;
     } else if (readingCounter % 5 == 0) {
-        serialPort.write(parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
+        serialPort.write("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
         readingCounter = 0;
     } else {
         readingCounter++;

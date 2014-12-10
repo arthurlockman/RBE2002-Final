@@ -137,7 +137,6 @@ void setup()
 
 void loop()
 {
-    drive(0);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -214,10 +213,10 @@ void loop()
         {
             setFans(0);
         }
-        else
+        else if (command.substring(0,3) == "imu")
         {
-            imuRotation = atof(command.c_str());
-            printToConsole(command);
+            imuRotation = atof(command.substring(3).c_str()) + 180.0;
+            // Serial.println(imuRotation);
         }
     }
     printDebuggingMessages();
@@ -511,6 +510,7 @@ float getCurrentOrientation()
  */
 void imuRoutine()
 {
+#if defined(OPENIMU)
     if ((millis() - timer) >= 20) // Main loop runs at 50Hz
     {
         counter++;
@@ -542,6 +542,7 @@ void imuRoutine()
 
         // printdata();
     }
+#endif
 }
 
 /**
