@@ -231,7 +231,8 @@ volatile long eastWestPosition   = 0;
 volatile float imuRotation = 0.0;
 //Sensor Constants
 static const int kLightSensorThresh = 500;
-
+static const float kWallMaxdist = 9.0;
+static const float kWallMinDist = 8.0;
 /**
  * @brief Applies a deadband to a number.
  * @details Applies a deadband to a number. Useful

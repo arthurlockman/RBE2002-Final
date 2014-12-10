@@ -54,14 +54,6 @@ void setup()
 
 void loop()
 {
-    Serial.print(m_rangeNorth.distance());
-    Serial.print('\t');
-    Serial.print(m_rangeWest.distance());
-    Serial.print('\t');
-    Serial.print(m_rangeSouth.distance());
-    Serial.print('\t');
-    Serial.println(m_rangeEast.distance());
-    delay(10);
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -163,37 +155,45 @@ void disable()
 
 int followWall(int side, int dir)
 {
-    int driveDir;
+    int   driveDir;
     float wallDist;
     float wall2Dist;
-
+    bool  wallLight;
+    bool  wall2Light;
     switch (side)
     {
     case 1:
         wallDist = m_rangeNorth.distance();
+        wallLight = m_lightNorth.read();
         wall2Dist = (dir == 1) ? m_rangeEast.distance() : m_rangeWest.distance();
-        Serial.print(wallDist);
-        Serial.print('\t');
-        Serial.println(wall2Dist);
-        if (wall2Dist < 6.0)
+        wall2Light = (dir == 1) ? m_lightEast.read() : m_lightWest.read();
+        if (wall2Dist < kWallMaxdist || wall2Light)
         {
             stopDrive();
             Serial.println("stopping");
             return 1;
         }
-        else if (wallDist > 6.0 && dir == 1)
-        {
-            drive(45);
-        }
-        else if (wallDist > 6.0 && dir == 0)
-        {
-            drive(315);
-        }
-        else if (wallDist < 3.0 && dir == 1)
+        else if (wallLight && dir == 1)
         {
             drive(135);
         }
-        else if (wallDist < 3.0 && dir == 0)
+        else if (wallLight && dir == 0)
+        {
+            drive(225);
+        }
+        else if (wallDist > kWallMaxdist && dir == 1)
+        {
+            drive(45);
+        }
+        else if (wallDist > kWallMaxdist && dir == 0)
+        {
+            drive(315);
+        }
+        else if (wallDist < kWallMinDist && dir == 1)
+        {
+            drive(135);
+        }
+        else if (wallDist < kWallMinDist && dir == 0)
         {
             drive(225);
         }
@@ -209,24 +209,34 @@ int followWall(int side, int dir)
     case 2:
         wallDist = m_rangeWest.distance();
         wall2Dist = (dir == 1) ? m_rangeNorth.distance() : m_rangeSouth.distance();
-        if (wall2Dist < 6.0)
+        wallLight = m_lightWest.read();
+        wall2Light = (dir == 1) ? m_lightNorth.read() : m_lightSouth.read();
+        if (wall2Dist < kWallMaxdist || wall2Light)
         {
             stopDrive();
             return 1;
         }
-        else if (wallDist > 6.0 && dir == 1)
-        {
-            drive(315);
-        }
-        else if (wallDist > 6.0 && dir == 0)
-        {
-            drive(225);
-        }
-        else if (wallDist < 3.0 && dir == 1)
+        else if (wallLight && dir == 1)
         {
             drive(45);
         }
-        else if (wallDist < 3.0 && dir == 0)
+        else if (wallLight && dir == 0)
+        {
+            drive(135);
+        }
+        else if (wallDist > kWallMaxdist && dir == 1)
+        {
+            drive(315);
+        }
+        else if (wallDist > kWallMaxdist && dir == 0)
+        {
+            drive(225);
+        }
+        else if (wallDist < kWallMinDist && dir == 1)
+        {
+            drive(45);
+        }
+        else if (wallDist < kWallMinDist && dir == 0)
         {
             drive(135);
         }
@@ -242,24 +252,34 @@ int followWall(int side, int dir)
     case 3:
         wallDist = m_rangeSouth.distance();
         wall2Dist = (dir == 1) ? m_rangeWest.distance() : m_rangeEast.distance();
-        if (wall2Dist < 6.0)
+        wallLight = m_lightSouth.read();
+        wall2Light = (dir == 1) ? m_lightWest.read() : m_lightEast.read();
+        if (wall2Dist < kWallMaxdist || wall2Light)
         {
             stopDrive();
             return 1;
         }
-        else if (wallDist > 6.0 && dir == 1)
-        {
-            drive(225);
-        }
-        else if (wallDist > 6.0 && dir == 0)
-        {
-            drive(135);
-        }
-        else if (wallDist < 3.0 && dir == 1)
+        else if (wallLight && dir == 1)
         {
             drive(315);
         }
-        else if (wallDist < 3.0 && dir == 0)
+        else if (wallLight && dir == 0)
+        {
+            drive(45);
+        }
+        else if (wallDist > kWallMaxdist && dir == 1)
+        {
+            drive(225);
+        }
+        else if (wallDist > kWallMaxdist && dir == 0)
+        {
+            drive(135);
+        }
+        else if (wallDist < kWallMinDist && dir == 1)
+        {
+            drive(315);
+        }
+        else if (wallDist < kWallMinDist && dir == 0)
         {
             drive(45);
         }
@@ -275,24 +295,34 @@ int followWall(int side, int dir)
     case 4:
         wallDist = m_rangeEast.distance();
         wall2Dist = (dir == 1) ? m_rangeSouth.distance() : m_rangeNorth.distance();
-        if (wall2Dist < 6.0)
+        wallLight = m_lightEast.read();
+        wall2Light = (dir == 1) ? m_lightSouth.read() : m_lightNorth.read();
+        if (wall2Dist < kWallMaxdist || wall2Light)
         {
             stopDrive();
             return 1;
         }
-        else if (wallDist > 6.0 && dir == 1)
-        {
-            drive(135);
-        }
-        else if (wallDist > 6.0 && dir == 0)
-        {
-            drive(45);
-        }
-        else if (wallDist < 3.0 && dir == 1)
+        else if (wallLight && dir == 1)
         {
             drive(225);
         }
-        else if (wallDist < 3.0 && dir == 0)
+        else if (wallLight && dir == 0)
+        {
+            drive(315);
+        }
+        else if (wallDist > kWallMaxdist && dir == 1)
+        {
+            drive(135);
+        }
+        else if (wallDist > kWallMaxdist && dir == 0)
+        {
+            drive(45);
+        }
+        else if (wallDist < kWallMinDist && dir == 1)
+        {
+            drive(225);
+        }
+        else if (wallDist < kWallMinDist && dir == 0)
         {
             drive(315);
         }
