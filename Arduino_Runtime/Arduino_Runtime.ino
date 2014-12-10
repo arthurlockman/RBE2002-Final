@@ -99,12 +99,11 @@ void loop()
         }
         else if (command == "en")
         {
-            enabled = true;
-            lockRotation();
+            enable();
         }
         else if (command == "ds")
         {
-            enabled = false;
+            disable();
         }
         else if (command == "fn")
         {
@@ -138,6 +137,19 @@ void loop()
     }
     printDebuggingMessages();
     updateDrive();
+}
+
+void enable()
+{
+    printToConsole("Robot enabled");
+    enabled = true;
+    lockRotation();
+}
+
+void disable()
+{
+    printToConsole("Robot disabled");
+    enabled = false;
 }
 
 int followWall(int side, int dir)
