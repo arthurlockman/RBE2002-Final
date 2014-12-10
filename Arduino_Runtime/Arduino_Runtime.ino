@@ -140,7 +140,6 @@ void loop()
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
-        printToConsole(command);
         if (command == "n")
         {
             drive(0);
@@ -569,6 +568,7 @@ void initializeMotors()
  */
 void drive(int degreesFromNorth)
 {
+    printToConsole("Driving...");
     m_stopped = false;
 #if defined(DRIVE_PID)
     //Do PID Drive
