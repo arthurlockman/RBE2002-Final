@@ -16,6 +16,7 @@ var sudo_options = {
 }
 
 var readingCounter = 0;
+var sendCounter = 1;
 var imuprocess = sudo(['minimu9-ahrs', '--output', 'euler', '-b', '/dev/i2c-1'], sudo_options);
 imuprocess.stderr.on('data', function(data) {
     console.log(data.toString());
@@ -26,10 +27,13 @@ imuprocess.stdout.on('data', function(data) {
     } else if (readingCounter == 400) {
         writeToConsole("Starting IMU...");
         readingCounter++;
-    } else {
+    } else if ((sendCounter % 5) == 0) { //slowing down data flow to make it easier for the arduino to process
         serialPort.write("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
         io.emit('heading' + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]));
+        sendCounter = 1;
         //console.log("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
+    } else {
+        sendCounter++;
     }
 })
 
@@ -42,6 +46,8 @@ serialPort.on("open", function() {
             writeToConsole(data.toString().substring(5).replace(/\r?\n/g, ""));
             //io.emit('console', moment().format("h:mm:ss a") + ": " + data.toString().substring(5).replace(/\r?\n/g, ""));
             //console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
+        } else {
+            console.log(data.toString());
         }
     });
 });
