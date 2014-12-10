@@ -217,6 +217,7 @@ void loop()
         else
         {
             imuRotation = atof(command.c_str());
+            printToConsole(command);
         }
     }
     printDebuggingMessages();
