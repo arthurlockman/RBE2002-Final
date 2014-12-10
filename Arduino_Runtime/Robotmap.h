@@ -235,7 +235,7 @@ static const int kISRMillis = kISRRate / 1000;
 //Position things
 volatile long northSouthPosition = 0;
 volatile long eastWestPosition   = 0;
-float imuRotation;
+float imuRotation = 0.0;
 //Sensor Constants
 static const int kLightSensorThresh = 500;
 
