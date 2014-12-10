@@ -15,29 +15,21 @@ var sudo_options = {
     prompt: 'Password, yo: '
 }
 
-var readingCounter = 0
+var readingCounter = 0;
 var imuprocess = sudo(['minimu9-ahrs', '--output', 'euler', '-b', '/dev/i2c-1'], sudo_options);
 imuprocess.stderr.on('data', function(data) {
     console.log(data.toString());
 });
 imuprocess.stdout.on('data', function(data) {
     if (readingCounter < 400) {
-        //console.log(readingCounter + ": " + data.toString());
         readingCounter++;
-    } else {
+    } else if (readingCounter % 5 == 0) {
         serialPort.write(parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
+        readingCounter = 0;
+    } else {
+        readingCounter++;
     }
 })
-
-// var exec = require('child_process').exec;
-// var imuprocess = exec('ping calculon.res.wpi.net');
-
-// imuprocess.stdout.on('data', function(data) {
-//     console.log('stdout: ' + data);
-// });
-// imuprocess.stderr.on('data', function(data) {
-//     console.log('stderr: ' + data);
-// });
 
 serialPort.on("open", function() {
     console.log("port open");
