@@ -224,7 +224,7 @@ static const int kQuadEncTicksPerRev = 360;
 static const int kSingleEncTicksPerRev = 180;
 static const float kDriveP = 0.1;
 static const float kGyroCorrectionP = 0.000;
-static const float kCompassCorrectionP = 1.0;
+static const float kCompassCorrectionP = 2.0;
 
 static const int kISRRate = 1000000;
 static const int kISRMillis = kISRRate / 1000;
@@ -232,7 +232,7 @@ static const int kISRMillis = kISRRate / 1000;
 //Position things
 volatile long northSouthPosition = 0;
 volatile long eastWestPosition   = 0;
-float imuRotation = 0.0;
+volatile float imuRotation = 0.0;
 //Sensor Constants
 static const int kLightSensorThresh = 500;
 

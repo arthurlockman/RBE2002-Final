@@ -57,6 +57,7 @@ void loop()
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
+        // Serial.println(command);
         if (command == "n")
         {
             drive(0);
@@ -131,7 +132,7 @@ void loop()
         }
         else if (command.substring(0,3) == "imu")
         {
-            imuRotation = atof(command.substring(3).c_str()) + 180.0;
+            imuRotation = atof(command.substring(3).c_str());
             // Serial.println(imuRotation);
         }
     }
@@ -488,17 +489,17 @@ void updateDrive()
         m_south.write(90);
     }
 #else
-    float headingError = getCurrentOrientation() - startOrientation;
-    northSetpoint += (int)(headingError * kCompassCorrectionP);
-    westSetpoint  += - (int)(headingError * kCompassCorrectionP);
-    southSetpoint += - (int)(headingError * kCompassCorrectionP);
-    eastSetpoint  += (int)(headingError * kCompassCorrectionP);
+    float headingError = imuRotation - startOrientation;
+    int northSetpointAdj = northSetpoint + (int)(headingError * kCompassCorrectionP);
+    int westSetpointAdj  = westSetpoint - (int)(headingError * kCompassCorrectionP);
+    int southSetpointAdj = southSetpoint - (int)(headingError * kCompassCorrectionP);
+    int eastSetpointAdj  = eastSetpoint + (int)(headingError * kCompassCorrectionP);
     if (!m_stopped)
     {
-        m_north.write(180 - ((northSetpoint < 0) ? northSetpoint + 180 : northSetpoint));
-        m_south.write(((southSetpoint < 0) ? southSetpoint + 180 : southSetpoint));
-        m_east.write(180 - ((eastSetpoint < 0) ? eastSetpoint + 180 : eastSetpoint));
-        m_west.write(((westSetpoint < 0) ? westSetpoint + 180 : westSetpoint));
+        m_north.write(180 - ((northSetpointAdj < 0) ? northSetpointAdj + 180 : northSetpointAdj));
+        m_south.write(((southSetpointAdj < 0) ? southSetpointAdj + 180 : southSetpointAdj));
+        m_east.write(180 - ((eastSetpointAdj < 0) ? eastSetpointAdj + 180 : eastSetpointAdj));
+        m_west.write(((westSetpointAdj < 0) ? westSetpointAdj + 180 : westSetpointAdj));
     }
     else
     {
@@ -717,4 +718,5 @@ void periodicUpdate()
 void lockRotation()
 {
     startOrientation = imuRotation;
+    Serial.println(startOrientation);
 }
