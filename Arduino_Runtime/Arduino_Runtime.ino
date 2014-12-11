@@ -54,6 +54,7 @@ void setup()
 
 void loop()
 {
+    Serial.println(greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), m_rangeSouth.distance(), m_rangeEast.distance()));
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');

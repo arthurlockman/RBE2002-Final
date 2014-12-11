@@ -132,3 +132,18 @@ inline float CalculateEncoderSpeed(int ticks, int dT, int ticksPerRev)
 };
 
 #endif
+
+inline int greatestIndex(double numargs, ...)
+{
+    va_list listPointer;
+    va_start(listPointer, numargs);
+    double greatest = 0;
+    int index = 0;
+    for(int i = 0 ; i < (int)numargs; i++)
+    {
+        double arg = va_arg(listPointer, double);
+        if (arg > greatest) { index = i + 1; greatest = arg; }
+    }
+    va_end(listPointer);
+    return index;
+};
