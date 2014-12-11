@@ -54,6 +54,7 @@ void setup()
 
 void loop()
 {
+    Serial.println(getFlameAverage(1));
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
