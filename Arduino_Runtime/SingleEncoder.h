@@ -13,6 +13,7 @@ public:
 	void update(int dir);
 	void write(uint32_t newPosition);
 	int interruptPin;
+	float distance();
 private:
 	uint32_t position;
 	long startTime;

@@ -47,3 +47,8 @@ float SingleEncoder::speed()
 {
 	return m_speed;
 }
+
+float SingleEncoder::distance()
+{
+	return ((float)position / (float)m_ticksPerRev) * 2.75 * M_PI;
+}
