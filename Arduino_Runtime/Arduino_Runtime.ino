@@ -54,7 +54,6 @@ void setup()
 
 void loop()
 {
-    Serial.println(greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), m_rangeSouth.distance(), m_rangeEast.distance()));
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -758,4 +757,25 @@ void lockRotation()
 {
     startOrientation = imuRotation;
     Serial.println(startOrientation);
+}
+
+int getFlameAverage(int side){
+    int sum=0;
+    for(int i=0;i<10;i++){
+        switch (side){
+            case 1:
+                sum +=analogRead(3);
+                break;
+            case 2:
+                sum +=analogRead(4);
+                break;
+            case 3:
+                sum +=analogRead(5);
+                break;
+            case 4:
+                sum +=analogRead(6);
+                break;
+        }
+    }
+    return sum/10;
 }
