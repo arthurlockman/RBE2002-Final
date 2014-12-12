@@ -3,10 +3,10 @@
 
 #include "Arduino.h"
 
-#define K_A 23.92856
-#define K_B 7.783453
-#define K_C 25.06772
-#define K_D 849.9155
+#define K_A 22.27373914
+#define K_B 7.436106118
+#define K_C 25.23852275
+#define K_D 867.288791
 #define K_CUTOFF 1000
 
 class FlameSensor

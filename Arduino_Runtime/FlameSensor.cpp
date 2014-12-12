@@ -23,14 +23,15 @@ int FlameSensor::read()
 
 float FlameSensor::distance()
 {
-	int y = this->read();
-	if (y < K_CUTOFF)
+	float y = (float)this->read();
+	if (y < K_D)
 	{
-		double base = K_C * ((y - K_A) / (K_D - y));
-		double power = 1 / K_B;
-		return pow(base, power);
+		double base = ((K_A - K_D) / (y - K_D) - 1);
+		double power = (1 / K_B);
+		return pow(base, power) * K_C;
 	}
-	else { return -1.0; }
+	else if (y > K_D && y < 1000) { return -1.0; }
+	else { return -2.0; }
 }
 
 float FlameSensor::height()

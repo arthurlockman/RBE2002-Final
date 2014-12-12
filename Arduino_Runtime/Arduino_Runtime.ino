@@ -59,7 +59,6 @@ void setup()
 
 void loop()
 {
-    // Serial.println(getSmallestFrontier());
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -68,7 +67,7 @@ void loop()
         {
             drive(0);
         }
-        else if (command == "s")
+        else if (command == "s")    
         {
             drive(180);
         }
