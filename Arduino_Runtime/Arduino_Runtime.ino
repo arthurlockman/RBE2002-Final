@@ -6,27 +6,30 @@
 // #define OPENIMU //Use OpenIMU Library
 // #define DRIVE_PID //Comment out to disable Drive PID
 
-Servo          m_north, m_west, m_south, m_east;
-int            m_loopState = 0;
-int            m_gyroZero = 0;
-boolean        enabled = false;
-boolean        m_stopped = true;
-SingleEncoder  m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
-SingleEncoder  m_encoderWest(kWestEncoderA, kSingleEncTicksPerRev);
-SingleEncoder  m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
-SingleEncoder  m_encoderSouth(kSouthEncoderA, kSingleEncTicksPerRev);
-Ultrasonic     m_rangeNorth(kNorthRangeOut);
-Ultrasonic     m_rangeWest(kWestRangeOut);
-Ultrasonic     m_rangeSouth(kSouthRangeOut);
-Ultrasonic     m_rangeEast(kEastRangeOut);
-LightSensor    m_lightNorth(kLightSensorNorth, kLightSensorThresh);
-LightSensor    m_lightWest(kLightSensorWest, kLightSensorThresh);
-LightSensor    m_lightSouth(kLightSensorSouth, kLightSensorThresh);
-LightSensor    m_lightEast(kLightSensorEast, kLightSensorThresh);
-FlameSensor    m_flameNorth(kFlameSensorNorth);
-FlameSensor    m_flameWest(kFlameSensorWest);
-FlameSensor    m_flameSouth(kFlameSensorSouth);
-FlameSensor    m_flameEast(kFlameSensorEast);
+Servo             m_north, m_west, m_south, m_east;
+int               m_loopState = 0;
+int               m_gyroZero = 0;
+boolean           enabled = false;
+boolean           m_stopped = true;
+boolean           m_navigate = true;
+NavigationState   m_navigationState = kNavigationStart;
+NavigationState   m_prevNavState = kNavigationStart;
+SingleEncoder     m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
+SingleEncoder     m_encoderWest(kWestEncoderA, kSingleEncTicksPerRev);
+SingleEncoder     m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
+SingleEncoder     m_encoderSouth(kSouthEncoderA, kSingleEncTicksPerRev);
+Ultrasonic        m_rangeNorth(kNorthRangeOut);
+Ultrasonic        m_rangeWest(kWestRangeOut);
+Ultrasonic        m_rangeSouth(kSouthRangeOut);
+Ultrasonic        m_rangeEast(kEastRangeOut);
+LightSensor       m_lightNorth(kLightSensorNorth, kLightSensorThresh);
+LightSensor       m_lightWest(kLightSensorWest, kLightSensorThresh);
+LightSensor       m_lightSouth(kLightSensorSouth, kLightSensorThresh);
+LightSensor       m_lightEast(kLightSensorEast, kLightSensorThresh);
+FlameSensor       m_flameNorth(kFlameSensorNorth);
+FlameSensor       m_flameWest(kFlameSensorWest);
+FlameSensor       m_flameSouth(kFlameSensorSouth);
+FlameSensor       m_flameEast(kFlameSensorEast);
 
 void setup()
 {
@@ -138,6 +141,7 @@ void loop()
     }
     printDebuggingMessages();
     updateDrive();
+    navigate();
 }
 
 void enable()
@@ -151,6 +155,37 @@ void disable()
 {
     printToConsole("Robot disabled");
     enabled = false;
+}
+
+/**
+ * @brief Navigate field.
+ * @details Handles field navigation.
+ */
+void navigate()
+{
+    if (m_navigate)
+    {
+        switch (m_navigationState)
+        {
+        case kNavigationStart:
+            break;
+        case kNavigationFollowWall:
+            break;
+        }
+    }
+}
+
+void changeNavState(NavigationState navState)
+{
+    m_prevNavState = m_navigationState;
+    m_navigationState = navState;
+}
+
+void revertNavState()
+{
+    NavigationState tmp = m_navigationState;
+    m_navigationState = m_prevNavState;
+    m_prevNavState = m_navigationState;
 }
 
 int followWall(int side, int dir)

@@ -59,6 +59,12 @@ enum AnalogPins
     kLightSensorNorth = 11
 };
 
+enum NavigationState
+{
+    kNavigationStart,
+    kNavigationFollowWall
+};
+
 // Number between 0 and 90
 int driveSpeed = 30;
 
