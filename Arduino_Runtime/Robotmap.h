@@ -8,6 +8,7 @@
 #include "Ultrasonic.h"
 #include "LightSensor.h"
 #include "FlameSensor.h"
+#include "StackList.h"
 
 enum MotorPins
 {
@@ -65,6 +66,12 @@ enum NavigationState
     kNavigationFollowWall
 };
 
+struct FollowCommand
+{
+    int side; //north, south, east, west
+    int direction; //left or right
+};
+
 // Number between 0 and 90
 int driveSpeed = 30;
 
@@ -111,6 +118,10 @@ volatile float imuRotation = 0.0;
 static const int kLightSensorThresh = 500;
 static const float kWallMaxdist = 9.0;
 static const float kWallMinDist = 8.0;
+
+//Navigation Constants
+StackList<FollowCommand> m_navStack;
+
 /**
  * @brief Applies a deadband to a number.
  * @details Applies a deadband to a number. Useful

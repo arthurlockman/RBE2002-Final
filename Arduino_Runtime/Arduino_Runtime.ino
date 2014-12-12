@@ -793,3 +793,27 @@ void lockRotation()
     startOrientation = imuRotation;
     Serial.println(startOrientation);
 }
+
+int getLargestFrontier()
+{
+    return greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), m_rangeEast.distance(), m_rangeSouth.distance());
+}
+
+int getLargestFrontierLeftRight(int currentSide)
+{
+    switch(currentSide)
+    {
+    case 1: //north
+        return greatestIndex(2.0, m_rangeEast.distance(), m_rangeWest.distance());
+        break;
+    case 2: //west
+        return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+        break;
+    case 3: //south
+        return greatestIndex(2.0, m_rangeWest.distance(), m_rangeEast.distance());
+        break;
+    case 4: //east
+        return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+        break;
+    }
+}
