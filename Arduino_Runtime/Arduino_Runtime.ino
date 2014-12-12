@@ -191,7 +191,7 @@ void navigate()
             }
             break;
         case kNavigationDecideNext:
-            Serial.print("finding next");
+            Serial.println("finding next");
             if (!(m_lightNorth.read() || m_lightWest.read() || m_lightSouth.read() || m_lightEast.read()))
             {
                 switch (m_navigationCurrentWall)
@@ -250,7 +250,7 @@ void navigate()
                     break;
                 }
             } else { //Handle case where light sensors are tripped
-                switch(m_navigationCurrentDir)
+                switch(m_navigationCurrentWall)
                 {
                 case 1: //north
                     switch(m_navigationCurrentDir)
@@ -291,7 +291,6 @@ void navigate()
                         break;
                     }
                     break;
-                    break;
                 case 4: //east
                     switch(m_navigationCurrentDir)
                     {
@@ -305,11 +304,10 @@ void navigate()
                         break;
                     }
                     break;
-                    break;
                 }
             }
+            changeNavState(kNavigationFollowWall);
             break;
-            revertNavState();
         }
     }
 }
@@ -351,7 +349,7 @@ int followWall(int side, int dir)
         {
             drive(135);
         }
-        else if (wallLight && dir == 0)
+        else if (wallLight && dir != 1)
         {
             drive(225);
         }
@@ -359,7 +357,7 @@ int followWall(int side, int dir)
         {
             drive(45);
         }
-        else if (wallDist > kWallMaxdist && dir == 0)
+        else if (wallDist > kWallMaxdist && dir != 1)
         {
             drive(315);
         }
@@ -367,7 +365,7 @@ int followWall(int side, int dir)
         {
             drive(135);
         }
-        else if (wallDist < kWallMinDist && dir == 0)
+        else if (wallDist < kWallMinDist && dir != 1)
         {
             drive(225);
         }
@@ -375,7 +373,7 @@ int followWall(int side, int dir)
         {
             drive(90);
         }
-        else if (dir == 0)
+        else if (dir != 1)
         {
             drive(270);
         }
@@ -394,7 +392,7 @@ int followWall(int side, int dir)
         {
             drive(45);
         }
-        else if (wallLight && dir == 0)
+        else if (wallLight && dir != 1)
         {
             drive(135);
         }
@@ -402,7 +400,7 @@ int followWall(int side, int dir)
         {
             drive(315);
         }
-        else if (wallDist > kWallMaxdist && dir == 0)
+        else if (wallDist > kWallMaxdist && dir != 1)
         {
             drive(225);
         }
@@ -410,7 +408,7 @@ int followWall(int side, int dir)
         {
             drive(45);
         }
-        else if (wallDist < kWallMinDist && dir == 0)
+        else if (wallDist < kWallMinDist && dir != 1)
         {
             drive(135);
         }
@@ -418,7 +416,7 @@ int followWall(int side, int dir)
         {
             drive(0);
         }
-        else if (dir == 0)
+        else if (dir != 1)
         {
             drive(180);
         }
@@ -437,7 +435,7 @@ int followWall(int side, int dir)
         {
             drive(315);
         }
-        else if (wallLight && dir == 0)
+        else if (wallLight && dir != 1)
         {
             drive(45);
         }
@@ -445,7 +443,7 @@ int followWall(int side, int dir)
         {
             drive(225);
         }
-        else if (wallDist > kWallMaxdist && dir == 0)
+        else if (wallDist > kWallMaxdist && dir != 1)
         {
             drive(135);
         }
@@ -453,7 +451,7 @@ int followWall(int side, int dir)
         {
             drive(315);
         }
-        else if (wallDist < kWallMinDist && dir == 0)
+        else if (wallDist < kWallMinDist && dir != 1)
         {
             drive(45);
         }
@@ -461,7 +459,7 @@ int followWall(int side, int dir)
         {
             drive(270);
         }
-        else if (dir == 0)
+        else if (dir != 1)
         {
             drive(90);
         }
@@ -480,7 +478,7 @@ int followWall(int side, int dir)
         {
             drive(225);
         }
-        else if (wallLight && dir == 0)
+        else if (wallLight && dir != 1)
         {
             drive(315);
         }
@@ -488,7 +486,7 @@ int followWall(int side, int dir)
         {
             drive(135);
         }
-        else if (wallDist > kWallMaxdist && dir == 0)
+        else if (wallDist > kWallMaxdist && dir != 1)
         {
             drive(45);
         }
@@ -496,7 +494,7 @@ int followWall(int side, int dir)
         {
             drive(225);
         }
-        else if (wallDist < kWallMinDist && dir == 0)
+        else if (wallDist < kWallMinDist && dir != 1)
         {
             drive(315);
         }
@@ -504,7 +502,7 @@ int followWall(int side, int dir)
         {
             drive(180);
         }
-        else if (dir == 0)
+        else if (dir != 1)
         {
             drive(0);
         }
@@ -638,7 +636,6 @@ void initializeMotors()
  */
 void drive(int degreesFromNorth)
 {
-    printToConsole("Driving...");
     m_stopped = false;
 #if defined(DRIVE_PID)
     //Do PID Drive
