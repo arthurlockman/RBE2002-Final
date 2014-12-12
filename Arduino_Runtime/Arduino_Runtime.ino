@@ -14,6 +14,8 @@ boolean           m_stopped = true;
 boolean           m_navigate = true;
 NavigationState   m_navigationState = kNavigationStart;
 NavigationState   m_prevNavState = kNavigationStart;
+int               m_navigationCurrentWall = 1;
+int               m_navigationCurrentDir = 1;
 SingleEncoder     m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
 SingleEncoder     m_encoderWest(kWestEncoderA, kSingleEncTicksPerRev);
 SingleEncoder     m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
@@ -140,7 +142,7 @@ void loop()
             m_navigate = true;
             m_navigationState = kNavigationStart;
         }
-        else if (command.substring(0,3) == "imu")
+        else if (command.substring(0, 3) == "imu")
         {
             imuRotation = atof(command.substring(3).c_str());
             // Serial.println(imuRotation);
@@ -175,9 +177,135 @@ void navigate()
         switch (m_navigationState)
         {
         case kNavigationStart:
+            m_navigationCurrentWall = getSmallestFrontier();
+            m_navigationCurrentDir  = getLargestFrontierLeftRight(m_navigationCurrentWall);
+            changeNavState(kNavigationFollowWall);
             break;
         case kNavigationFollowWall:
+            if (followWall(m_navigationCurrentWall, m_navigationCurrentDir))
+            {
+                changeNavState(kNavigationDecideNext);
+            }
             break;
+        case kNavigationDecideNext:
+            if (!(m_lightNorth.read() || m_lightWest.read() || m_lightSouth.read() || m_lightEast.read()))
+            {
+                switch (m_navigationCurrentWall)
+                {
+                case 1: //north
+                    switch (m_navigationCurrentDir)
+                    {
+                    case 1: //east
+                        m_navigationCurrentWall = 4;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    default: //west
+                        m_navigationCurrentWall = 2;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    }
+                    break;
+                case 2: //west
+                    switch (m_navigationCurrentDir)
+                    {
+                    case 1: //north
+                        m_navigationCurrentWall = 1;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    default: //south
+                        m_navigationCurrentWall = 3;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    }
+                    break;
+                case 3: //south
+                    switch (m_navigationCurrentDir)
+                    {
+                    case 1: //west
+                        m_navigationCurrentWall = 2;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    default: //east
+                        m_navigationCurrentWall = 4;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    }
+                    break;
+                case 4: //east
+                    switch (m_navigationCurrentDir)
+                    {
+                    case 1: //south
+                        m_navigationCurrentWall = 3;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    default: //north
+                        m_navigationCurrentWall = 1;
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        break;
+                    }
+                    break;
+                }
+            } else { //Handle case where light sensors are tripped
+                switch(m_navigationCurrentDir)
+                {
+                case 1: //north
+                    switch(m_navigationCurrentDir)
+                    {
+                    case 1:
+                        m_navigationCurrentWall = 4;
+                        m_navigationCurrentDir = 1;
+                        break;
+                    default:
+                        m_navigationCurrentWall = 2;
+                        m_navigationCurrentDir = 0;
+                        break;
+                    }
+                    break;
+                case 2: //west
+                    switch(m_navigationCurrentDir)
+                    {
+                    case 1:
+                        m_navigationCurrentWall = 1;
+                        m_navigationCurrentDir = 1;
+                        break;
+                    default:
+                        m_navigationCurrentWall = 3;
+                        m_navigationCurrentDir = 0;
+                        break;
+                    }
+                    break;
+                case 3: //south
+                    switch(m_navigationCurrentDir)
+                    {
+                    case 1:
+                        m_navigationCurrentWall = 2;
+                        m_navigationCurrentDir = 1;
+                        break;
+                    default:
+                        m_navigationCurrentWall = 4;
+                        m_navigationCurrentDir = 0;
+                        break;
+                    }
+                    break;
+                    break;
+                case 4: //east
+                    switch(m_navigationCurrentDir)
+                    {
+                    case 1:
+                        m_navigationCurrentWall = 3;
+                        m_navigationCurrentDir = 1;
+                        break;
+                    default:
+                        m_navigationCurrentWall = 1;
+                        m_navigationCurrentDir = 0;
+                        break;
+                    }
+                    break;
+                    break;
+                }
+            }
+            break;
+            revertNavState();
         }
     }
 }
@@ -806,9 +934,14 @@ int getLargestFrontier()
     return greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), m_rangeEast.distance(), m_rangeSouth.distance());
 }
 
+int getSmallestFrontier()
+{
+    return leastIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), m_rangeEast.distance(), m_rangeSouth.distance());
+}
+
 int getLargestFrontierLeftRight(int currentSide)
 {
-    switch(currentSide)
+    switch (currentSide)
     {
     case 1: //north
         return greatestIndex(2.0, m_rangeEast.distance(), m_rangeWest.distance());

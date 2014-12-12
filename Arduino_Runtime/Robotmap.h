@@ -63,7 +63,8 @@ enum AnalogPins
 enum NavigationState
 {
     kNavigationStart,
-    kNavigationFollowWall
+    kNavigationFollowWall,
+    kNavigationDecideNext
 };
 
 struct FollowCommand
