@@ -170,7 +170,7 @@ inline int leastIndex(double numargs, ...)
 {
     va_list listPointer;
     va_start(listPointer, numargs);
-    double least = 0;
+    double least = 1000000;
     int index = 0;
     for(int i = 0 ; i < (int)numargs; i++)
     {
