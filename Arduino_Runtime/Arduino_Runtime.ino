@@ -11,7 +11,7 @@ int               m_loopState = 0;
 int               m_gyroZero = 0;
 boolean           enabled = false;
 boolean           m_stopped = true;
-boolean           m_navigate = true;
+boolean           m_navigate = false;
 NavigationState   m_navigationState = kNavigationStart;
 NavigationState   m_prevNavState = kNavigationStart;
 int               m_navigationCurrentWall = 1;
@@ -59,6 +59,7 @@ void setup()
 
 void loop()
 {
+    Serial.println(getSmallestFrontier());
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -141,6 +142,7 @@ void loop()
         {
             m_navigate = true;
             m_navigationState = kNavigationStart;
+            Serial.println("got nav command");
         }
         else if (command.substring(0, 3) == "imu")
         {
@@ -178,7 +180,9 @@ void navigate()
         {
         case kNavigationStart:
             m_navigationCurrentWall = getSmallestFrontier();
+            Serial.println(m_navigationCurrentWall);
             m_navigationCurrentDir  = getLargestFrontierLeftRight(m_navigationCurrentWall);
+            Serial.println(m_navigationCurrentDir);
             changeNavState(kNavigationFollowWall);
             break;
         case kNavigationFollowWall:
