@@ -59,7 +59,7 @@ void setup()
 
 void loop()
 {
-    Serial.println(getSmallestFrontier());
+    // Serial.println(getSmallestFrontier());
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -192,6 +192,7 @@ void navigate()
             }
             break;
         case kNavigationDecideNext:
+            Serial.print("finding next");
             if (!(m_lightNorth.read() || m_lightWest.read() || m_lightSouth.read() || m_lightEast.read()))
             {
                 switch (m_navigationCurrentWall)
