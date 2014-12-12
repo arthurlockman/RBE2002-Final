@@ -96,6 +96,8 @@ void loop()
         else if (command == "st")
         {
             stopDrive();
+            m_navigate = false;
+            m_navigationState = kNavigationStart;
         }
         else if (command == "sp")
         {
@@ -132,6 +134,11 @@ void loop()
         else if (command == "fo")
         {
             setFans(0);
+        }
+        else if (command == "nav")
+        {
+            m_navigate = true;
+            m_navigationState = kNavigationStart;
         }
         else if (command.substring(0,3) == "imu")
         {

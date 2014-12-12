@@ -164,3 +164,18 @@ inline int greatestIndex(double numargs, ...)
     va_end(listPointer);
     return index;
 };
+
+inline int leastIndex(double numargs, ...)
+{
+    va_list listPointer;
+    va_start(listPointer, numargs);
+    double least = 0;
+    int index = 0;
+    for(int i = 0 ; i < (int)numargs; i++)
+    {
+        double arg = va_arg(listPointer, double);
+        if (arg < least) { index = i + 1; least = arg; }
+    }
+    va_end(listPointer);
+    return index;
+};
