@@ -957,3 +957,25 @@ int getLargestFrontierLeftRight(int currentSide)
         break;
     }
 }
+
+/**
+ * @brief Gets a heading of the flame.
+ * @details Calculates a heading of the flame.
+ * @return The heading in degrees from north.
+ */
+float getFlameHeading()
+{
+    float noDist = m_flameNorth.read();
+    noDist = (noDist > 1000) ? 0 : 1023 - noDist;
+    float weDist = m_flameWest.read();
+    weDist = (weDist > 1000) ? 0 : 1023 - weDist;
+    float soDist = m_flameSouth.read();
+    soDist = (soDist > 1000) ? 0 : 1023 - soDist;
+    float eaDist = m_flameEast.read();
+    eaDist = (eaDist > 1000) ? 0 : 1023 - eaDist;
+    float noBias = (eaDist > weDist) ? 90.0 : 450.0;
+
+    float numerator = (noBias * noDist) + (180.0 * eaDist) + (270.0 * soDist) + (360.0 * weDist);
+    float denominator = noDist + eaDist + weDist + soDist;
+    return (numerator / denominator) - 90.0;
+}
