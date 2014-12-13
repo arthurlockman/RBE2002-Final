@@ -59,6 +59,15 @@ void setup()
 
 void loop()
 {
+    if(candleVisible() != -1)
+    {
+        homeOnCandle(candleVisible());
+    }
+    else
+    {
+        stopDrive();
+    }
+
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -980,3 +989,84 @@ float getFlameHeading()
     float denominator = noDist + eaDist + weDist + soDist;
     return (numerator / denominator) - 90.0;
 }
+
+int candleVisible()
+{
+    int minimumSide = -1;
+    int minimum = 4000;
+    if(m_flameNorth.distance() > 0 && m_flameNorth.distance() < minimum)
+    {
+        minimum = m_flameNorth.distance();
+        minimumSide = 0;
+    }
+    if(m_flameWest.distance() > 0 && m_flameWest.distance() < minimum)
+    {
+        minimum = m_flameWest.distance();
+        minimumSide = 1;
+    }
+    if(m_flameSouth.distance() > 0 && m_flameSouth.distance() < minimum)
+    {
+        minimum = m_flameSouth.distance();
+        minimumSide = 2;
+    }
+    if(m_flameEast.distance() > 0 && m_flameEast.distance() < minimum)
+    {
+        minimum = m_flameEast.distance();
+        minimumSide = 3;
+    }
+    return minimumSide;
+}
+
+bool homeOnCandle(int d)
+{
+    static int previousDirection = 0;  
+    static int previous;
+    static int change;
+    int previousChange = change;
+
+    int sensorValue;
+
+    switch(d)
+    {
+        // North
+        case 0: 
+            if(previousDirection != 90 || previousDirection != 270)
+            {
+                previousDirection = 90;
+            }
+
+            sensorValue = m_flameNorth.read();
+            change = sensorValue - previous;
+            break;
+        // West
+        case 1:
+            break;
+        // South
+        case 2:
+            break;
+        // East
+        case 3:
+            break;
+    }
+
+    if(previousChange < 0 && change > 0)
+    {
+        stopDrive();
+        return true;
+    }
+
+    if(change < 0)
+    {
+        previousDirection = previousDirection;
+    }
+    else 
+    {  
+        previousDirection = (previousDirection + 180) % 360;
+    }
+
+    previous = sensorValue;
+    drive(previousDirection);
+    return false;
+
+}
+
