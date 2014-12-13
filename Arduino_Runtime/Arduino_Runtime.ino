@@ -60,22 +60,6 @@ void setup()
 
 void loop()
 {
-    if(candleVisible() != -1)
-    {
-        Serial.println("Candle is visible.");
-        if(homeOnCandle(candleVisible()))
-        {
-            drive(0);
-            updateDrive();
-            delay(250);
-        }
-    }
-    else
-    {
-        Serial.println("Candle is not visible.");
-        stopDrive();
-    }
-
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -1043,34 +1027,81 @@ bool homeOnCandle(int d)
     {
         // North
         case 0: 
-            sensorValue = m_flameNorth.distance();
-            if(previousDirection != 90 && previousDirection != 270) // First time homing in this direction
+            if (m_rangeNorth.distance() > 8.0)
             {
-                previousDirection = 90;
-                change = 0;
-                previousChange = 0;
-            }
-            else
-            {
-                previousChange = change;
-                change = sensorValue - previous;
-            }
-            
+                sensorValue = m_flameNorth.distance();
+                if(previousDirection != 45 && previousDirection !=  315) // First time homing in this direction
+                {
+                    previousDirection = 30;
+                    change = 0;
+                    previousChange = 0;
+                }
+                else
+                {
+                    previousChange = change;
+                    change = sensorValue - previous;
+                }
+            } else { stopDrive(); setFans(1); return true; }
             break;
         // West
         case 1:
+            if (m_rangeWest.distance() > 8.0)
+            {
+                sensorValue = m_flameWest.distance();
+                if(previousDirection != 315 && previousDirection !=  225) // First time homing in this direction
+                {
+                    previousDirection = 315;
+                    change = 0;
+                    previousChange = 0;
+                }
+                else
+                {
+                    previousChange = change;
+                    change = sensorValue - previous;
+                }
+            } else { stopDrive(); setFans(2); return true; }
             break;
         // South
         case 2:
+            if (m_rangeSouth.distance() > 8.0)
+            {
+                sensorValue = m_flameSouth.distance();
+                if(previousDirection != 225 && previousDirection !=  135) // First time homing in this direction
+                {
+                    previousDirection = 225;
+                    change = 0;
+                    previousChange = 0;
+                }
+                else
+                {
+                    previousChange = change;
+                    change = sensorValue - previous;
+                }
+            } else { stopDrive(); setFans(3); return true; }
             break;
         // East
         case 3:
+            if (m_rangeEast.distance() > 8.0)
+            {
+                sensorValue = m_flameEast.distance();
+                if(previousDirection != 135 && previousDirection !=  45) // First time homing in this direction
+                {
+                    previousDirection = 135;
+                    change = 0;
+                    previousChange = 0;
+                }
+                else
+                {
+                    previousChange = change;
+                    change = sensorValue - previous;
+                }
+            } else { stopDrive(); setFans(4); return true; }
             break;
     }
-    if(previousChange < 0 && change > 0)
-    {
-        return true;
-    }
+    // if(previousChange < 0 && change > 0)
+    // {
+    //     return true;
+    // }
 
     if(change <= 0)
     {
@@ -1078,7 +1109,21 @@ bool homeOnCandle(int d)
     }
     else 
     {  
-        previousDirection = (previousDirection + 180) % 360;
+        switch(d)
+        {
+        case 0:
+            previousDirection = (previousDirection == 45) ? 315 : 45;
+            break;
+        case 1:
+            previousDirection = (previousDirection == 315) ? 225 : 315;
+            break;
+        case 2:
+            previousDirection = (previousDirection == 225) ? 135 : 225;
+            break;
+        case 4:
+            previousDirection = (previousDirection == 135) ? 45 : 135;
+            break;
+        }
     }
 
     previous = sensorValue;
