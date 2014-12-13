@@ -68,7 +68,7 @@ void loop()
         {
             drive(0);
         }
-        else if (command == "s")    
+        else if (command == "s")
         {
             drive(180);
         }
@@ -181,6 +181,14 @@ void navigate()
 {
     if (m_navigate)
     {
+        int candleSide = candleVisible();
+        if (candleSide != -1)
+        {
+            changeNavState(kNavigationHomeOnCandle);
+        } else if (m_navigationState == kNavigationHomeOnCandle && candleSide == -1)
+        {
+            changeNavState(kNavigationDecideNext);
+        }
         switch (m_navigationState)
         {
         case kNavigationStart:
@@ -255,11 +263,13 @@ void navigate()
                     }
                     break;
                 }
-            } else { //Handle case where light sensors are tripped
-                switch(m_navigationCurrentWall)
+            }
+            else     //Handle case where light sensors are tripped
+            {
+                switch (m_navigationCurrentWall)
                 {
                 case 1: //north
-                    switch(m_navigationCurrentDir)
+                    switch (m_navigationCurrentDir)
                     {
                     case 1:
                         m_navigationCurrentWall = 4;
@@ -272,7 +282,7 @@ void navigate()
                     }
                     break;
                 case 2: //west
-                    switch(m_navigationCurrentDir)
+                    switch (m_navigationCurrentDir)
                     {
                     case 1:
                         m_navigationCurrentWall = 1;
@@ -285,7 +295,7 @@ void navigate()
                     }
                     break;
                 case 3: //south
-                    switch(m_navigationCurrentDir)
+                    switch (m_navigationCurrentDir)
                     {
                     case 1:
                         m_navigationCurrentWall = 2;
@@ -298,7 +308,7 @@ void navigate()
                     }
                     break;
                 case 4: //east
-                    switch(m_navigationCurrentDir)
+                    switch (m_navigationCurrentDir)
                     {
                     case 1:
                         m_navigationCurrentWall = 3;
@@ -313,6 +323,14 @@ void navigate()
                 }
             }
             changeNavState(kNavigationFollowWall);
+            break;
+        case kNavigationHomeOnCandle:
+            if (homeOnCandle(candleSide))
+            {
+                changeNavState(kNavigationExtinguishFlame);
+            }
+            break;
+        case kNavigationExtinguishFlame:
             break;
         }
     }
@@ -997,17 +1015,17 @@ int candleVisible()
         minimum = m_flameNorth.distance();
         minimumSide = 0;
     }
-    if(m_flameWest.distance() > 0 && m_flameWest.distance() < minimum)
+    if (m_flameWest.distance() > 0 && m_flameWest.distance() < minimum)
     {
         minimum = m_flameWest.distance();
         minimumSide = 1;
     }
-    if(m_flameSouth.distance() > 0 && m_flameSouth.distance() < minimum)
+    if (m_flameSouth.distance() > 0 && m_flameSouth.distance() < minimum)
     {
         minimum = m_flameSouth.distance();
         minimumSide = 2;
     }
-    if(m_flameEast.distance() > 0 && m_flameEast.distance() < minimum)
+    if (m_flameEast.distance() > 0 && m_flameEast.distance() < minimum)
     {
         minimum = m_flameEast.distance();
         minimumSide = 3;
@@ -1023,93 +1041,117 @@ bool homeOnCandle(int d)
     int previousChange = change;
     int sensorValue;
 
-    switch(d)
+    switch (d)
     {
-        // North
-        case 0: 
-            if (m_rangeNorth.distance() > 8.0)
+    // North
+    case 0:
+        if (m_rangeNorth.distance() > 8.0)
+        {
+            sensorValue = m_flameNorth.distance();
+            if (previousDirection != 45 && previousDirection !=  315) // First time homing in this direction
             {
-                sensorValue = m_flameNorth.distance();
-                if(previousDirection != 45 && previousDirection !=  315) // First time homing in this direction
-                {
-                    previousDirection = 30;
-                    change = 0;
-                    previousChange = 0;
-                }
-                else
-                {
-                    previousChange = change;
-                    change = sensorValue - previous;
-                }
-            } else { stopDrive(); setFans(1); return true; }
-            break;
-        // West
-        case 1:
-            if (m_rangeWest.distance() > 8.0)
+                previousDirection = 30;
+                change = 0;
+                previousChange = 0;
+            }
+            else
             {
-                sensorValue = m_flameWest.distance();
-                if(previousDirection != 315 && previousDirection !=  225) // First time homing in this direction
-                {
-                    previousDirection = 315;
-                    change = 0;
-                    previousChange = 0;
-                }
-                else
-                {
-                    previousChange = change;
-                    change = sensorValue - previous;
-                }
-            } else { stopDrive(); setFans(2); return true; }
-            break;
-        // South
-        case 2:
-            if (m_rangeSouth.distance() > 8.0)
+                previousChange = change;
+                change = sensorValue - previous;
+            }
+        }
+        else
+        {
+            stopDrive();
+            setFans(1);
+            return true;
+        }
+        break;
+    // West
+    case 1:
+        if (m_rangeWest.distance() > 8.0)
+        {
+            sensorValue = m_flameWest.distance();
+            if (previousDirection != 315 && previousDirection !=  225) // First time homing in this direction
             {
-                sensorValue = m_flameSouth.distance();
-                if(previousDirection != 225 && previousDirection !=  135) // First time homing in this direction
-                {
-                    previousDirection = 225;
-                    change = 0;
-                    previousChange = 0;
-                }
-                else
-                {
-                    previousChange = change;
-                    change = sensorValue - previous;
-                }
-            } else { stopDrive(); setFans(3); return true; }
-            break;
-        // East
-        case 3:
-            if (m_rangeEast.distance() > 8.0)
+                previousDirection = 315;
+                change = 0;
+                previousChange = 0;
+            }
+            else
             {
-                sensorValue = m_flameEast.distance();
-                if(previousDirection != 135 && previousDirection !=  45) // First time homing in this direction
-                {
-                    previousDirection = 135;
-                    change = 0;
-                    previousChange = 0;
-                }
-                else
-                {
-                    previousChange = change;
-                    change = sensorValue - previous;
-                }
-            } else { stopDrive(); setFans(4); return true; }
-            break;
+                previousChange = change;
+                change = sensorValue - previous;
+            }
+        }
+        else
+        {
+            stopDrive();
+            setFans(2);
+            return true;
+        }
+        break;
+    // South
+    case 2:
+        if (m_rangeSouth.distance() > 8.0)
+        {
+            sensorValue = m_flameSouth.distance();
+            if (previousDirection != 225 && previousDirection !=  135) // First time homing in this direction
+            {
+                previousDirection = 225;
+                change = 0;
+                previousChange = 0;
+            }
+            else
+            {
+                previousChange = change;
+                change = sensorValue - previous;
+            }
+        }
+        else
+        {
+            stopDrive();
+            setFans(3);
+            return true;
+        }
+        break;
+    // East
+    case 3:
+        if (m_rangeEast.distance() > 8.0)
+        {
+            sensorValue = m_flameEast.distance();
+            if (previousDirection != 135 && previousDirection !=  45) // First time homing in this direction
+            {
+                previousDirection = 135;
+                change = 0;
+                previousChange = 0;
+            }
+            else
+            {
+                previousChange = change;
+                change = sensorValue - previous;
+            }
+        }
+        else
+        {
+            stopDrive();
+            setFans(4);
+            return true;
+        }
+        break;
     }
     // if(previousChange < 0 && change > 0)
     // {
     //     return true;
     // }
 
-    if(change <= 0)
+    if (change <= 0)
     {
         previousDirection = previousDirection;
     }
-    else 
-    {  
-        switch(d)
+    else
+    {
+        switch (d)
         {
         case 0:
             previousDirection = (previousDirection == 45) ? 315 : 45;
