@@ -185,9 +185,6 @@ void navigate()
         if (candleSide != -1)
         {
             changeNavState(kNavigationHomeOnCandle);
-        } else if (m_navigationState == kNavigationHomeOnCandle && candleSide == -1)
-        {
-            changeNavState(kNavigationDecideNext);
         }
         switch (m_navigationState)
         {
@@ -327,8 +324,11 @@ void navigate()
         case kNavigationHomeOnCandle:
             if (homeOnCandle(candleSide))
             {
-                changeNavState(kNavigationExtinguishFlame);
+                stopDrive();
+                changeNavState(kNavigtationApproachCandle);
             }
+            break;
+        case kNavigtationApproachCandle:
             break;
         case kNavigationExtinguishFlame:
             break;

@@ -66,6 +66,7 @@ enum NavigationState
     kNavigationFollowWall,
     kNavigationDecideNext,
     kNavigationHomeOnCandle,
+    kNavigtationApproachCandle,
     kNavigationExtinguishFlame
 };
 
