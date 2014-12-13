@@ -62,10 +62,17 @@ void loop()
 {
     if(candleVisible() != -1)
     {
-        homeOnCandle(candleVisible());
+        Serial.println("Candle is visible.");
+        if(homeOnCandle(candleVisible()))
+        {
+            drive(0);
+            updateDrive();
+            delay(250);
+        }
     }
     else
     {
+        Serial.println("Candle is not visible.");
         stopDrive();
     }
 
@@ -957,21 +964,22 @@ int getSmallestFrontier()
 
 int getLargestFrontierLeftRight(int currentSide)
 {
-    switch (currentSide)
-    {
-    case 1: //north
-        return greatestIndex(2.0, m_rangeEast.distance(), m_rangeWest.distance());
-        break;
-    case 2: //west
-        return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
-        break;
-    case 3: //south
-        return greatestIndex(2.0, m_rangeWest.distance(), m_rangeEast.distance());
-        break;
-    case 4: //east
-        return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
-        break;
-    }
+    return random(0, 2);
+    // switch (currentSide)
+    // {
+    // case 1: //north
+    //     return greatestIndex(2.0, m_rangeEast.distance(), m_rangeWest.distance());
+    //     break;
+    // case 2: //west
+    //     return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+    //     break;
+    // case 3: //south
+    //     return greatestIndex(2.0, m_rangeWest.distance(), m_rangeEast.distance());
+    //     break;
+    // case 4: //east
+    //     return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+    //     break;
+    // }
 }
 
 /**
@@ -1025,24 +1033,29 @@ int candleVisible()
 
 bool homeOnCandle(int d)
 {
-    static int previousDirection = 0;  
+    static int previousDirection;
     static int previous;
     static int change;
     int previousChange = change;
-
     int sensorValue;
 
     switch(d)
     {
         // North
         case 0: 
-            if(previousDirection != 90 || previousDirection != 270)
+            sensorValue = m_flameNorth.distance();
+            if(previousDirection != 90 && previousDirection != 270) // First time homing in this direction
             {
                 previousDirection = 90;
+                change = 0;
+                previousChange = 0;
             }
-
-            sensorValue = m_flameNorth.read();
-            change = sensorValue - previous;
+            else
+            {
+                previousChange = change;
+                change = sensorValue - previous;
+            }
+            
             break;
         // West
         case 1:
@@ -1054,14 +1067,12 @@ bool homeOnCandle(int d)
         case 3:
             break;
     }
-
     if(previousChange < 0 && change > 0)
     {
-        stopDrive();
         return true;
     }
 
-    if(change < 0)
+    if(change <= 0)
     {
         previousDirection = previousDirection;
     }
@@ -1073,6 +1084,5 @@ bool homeOnCandle(int d)
     previous = sensorValue;
     drive(previousDirection);
     return false;
-
 }
 
