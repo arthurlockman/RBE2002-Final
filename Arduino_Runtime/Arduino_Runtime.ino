@@ -32,6 +32,7 @@ FlameSensor       m_flameNorth(kFlameSensorNorth);
 FlameSensor       m_flameWest(kFlameSensorWest);
 FlameSensor       m_flameSouth(kFlameSensorSouth);
 FlameSensor       m_flameEast(kFlameSensorEast);
+int               m_randomSeed = 0;
 
 void setup()
 {
@@ -148,6 +149,11 @@ void loop()
             imuRotation = atof(command.substring(3).c_str());
             // Serial.println(imuRotation);
         }
+        else if (command.substring(0, 3) == "ran")
+        {
+            m_randomSeed = atoi(command.substring(3).c_str());
+            randomSeed(m_randomSeed);
+        }
     }
     printDebuggingMessages();
     updateDrive();
@@ -156,7 +162,7 @@ void loop()
 
 void enable()
 {
-    printToConsole("Robot enabled");
+    printToConsole("Robot Enabled: ");
     enabled = true;
     lockRotation();
 }

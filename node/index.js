@@ -8,6 +8,7 @@ var serialPort = new SerialPort("/dev/ttyACM0", {
       baudrate: 115200
 });
 var moment = require('moment');
+var random = require("node-random");
 
 var sudo = require('sudo');
 var sudo_options = {
@@ -76,6 +77,15 @@ io.on('connection', function(socket) {
         if (cmd == 'enable') {
             enabled = true;
             serialPort.write('en\n');
+            random.numbers({
+                "number": 1,
+                "minimum": 1,
+                "maximum": 10000
+            }, function(error, data) {
+                if (error) throw error;
+                console.log("Random seed: " + data);
+                serialPort.write("ran" + data + "\n");
+            });
             console.log('enabling robot...');
         } else if (cmd == 'disable') {
             enabled = false;
