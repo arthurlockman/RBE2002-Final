@@ -15,7 +15,7 @@ SingleEncoder::SingleEncoder(int pin, int ticksPerRev) :
 	}
 }
 
-uint32_t SingleEncoder::read()
+int SingleEncoder::read()
 {
 	return position;
 }
@@ -38,7 +38,7 @@ void SingleEncoder::update(int dir)
 	counter++;
 }
 
-void SingleEncoder::write(uint32_t newPosition)
+void SingleEncoder::write(int newPosition)
 {
 	position = newPosition;
 }

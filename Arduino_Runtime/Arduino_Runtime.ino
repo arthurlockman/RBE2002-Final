@@ -34,6 +34,7 @@ FlameSensor       m_flameSouth(kFlameSensorSouth);
 FlameSensor       m_flameEast(kFlameSensorEast);
 int               m_randomSeed = 0;
 
+int               printCounter = 0;
 void setup()
 {
     Serial.begin(115200);
@@ -182,10 +183,6 @@ void navigate()
     if (m_navigate)
     {
         int candleSide = candleVisible();
-        if (candleSide != -1)
-        {
-            changeNavState(kNavigationHomeOnCandle);
-        }
         switch (m_navigationState)
         {
         case kNavigationStart:
@@ -196,7 +193,11 @@ void navigate()
             changeNavState(kNavigationFollowWall);
             break;
         case kNavigationFollowWall:
-            if (followWall(m_navigationCurrentWall, m_navigationCurrentDir))
+            if (candleSide != -1)
+            {
+                changeNavState(kNavigationHomeOnCandle);
+            }
+            else if (followWall(m_navigationCurrentWall, m_navigationCurrentDir))
             {
                 changeNavState(kNavigationDecideNext);
             }
@@ -211,12 +212,12 @@ void navigate()
                     switch (m_navigationCurrentDir)
                     {
                     case 1: //east
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(4);
                         m_navigationCurrentWall = 4;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
                         break;
                     default: //west
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(2);
                         m_navigationCurrentWall = 2;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
                         break;
                     }
                     break;
@@ -224,12 +225,12 @@ void navigate()
                     switch (m_navigationCurrentDir)
                     {
                     case 1: //north
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(1);
                         m_navigationCurrentWall = 1;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
                         break;
                     default: //south
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(3);
                         m_navigationCurrentWall = 3;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
                         break;
                     }
                     break;
@@ -237,12 +238,12 @@ void navigate()
                     switch (m_navigationCurrentDir)
                     {
                     case 1: //west
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(2);
                         m_navigationCurrentWall = 2;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
                         break;
                     default: //east
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(4);
                         m_navigationCurrentWall = 4;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
                         break;
                     }
                     break;
@@ -251,11 +252,11 @@ void navigate()
                     {
                     case 1: //south
                         m_navigationCurrentWall = 3;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(3);
                         break;
                     default: //north
                         m_navigationCurrentWall = 1;
-                        m_navigationCurrentDir = getLargestFrontierLeftRight(m_navigationCurrentWall);
+                        m_navigationCurrentDir = getLargestFrontierLeftRight(1);
                         break;
                     }
                     break;
@@ -322,15 +323,34 @@ void navigate()
             changeNavState(kNavigationFollowWall);
             break;
         case kNavigationHomeOnCandle:
-            if (homeOnCandle(candleSide))
+            if (candleSide == -1)
+            {
+                changeNavState(kNavigationStart);
+            }
+            else if (homeOnCandle(candleSide))
             {
                 stopDrive();
                 changeNavState(kNavigtationApproachCandle);
             }
             break;
         case kNavigtationApproachCandle:
+            if (driveDistance((candleSide + 1), 4.0))
+            {
+                changeNavState(kNavigationExtinguishFlame);
+            }
             break;
         case kNavigationExtinguishFlame:
+            if (printCounter == 0)
+            {
+                String out;
+                out += "Displacement: ";
+                out += (int)getDisplacementX();
+                out += '\t';
+                out += (int)getDisplacementY();
+                printCounter++;
+                printToConsole(out);
+                stopDrive();
+            }
             break;
         }
     }
@@ -956,32 +976,37 @@ void lockRotation()
 
 int getLargestFrontier()
 {
-    return greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), m_rangeEast.distance(), m_rangeSouth.distance());
+    return greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), 
+        m_rangeEast.distance(), m_rangeSouth.distance());
 }
 
 int getSmallestFrontier()
 {
-    return leastIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), m_rangeEast.distance(), m_rangeSouth.distance());
+    return leastIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), 
+        m_rangeEast.distance(), m_rangeSouth.distance());
 }
 
 int getLargestFrontierLeftRight(int currentSide)
 {
-    return random(0, 2);
-    // switch (currentSide)
-    // {
-    // case 1: //north
-    //     return greatestIndex(2.0, m_rangeEast.distance(), m_rangeWest.distance());
-    //     break;
-    // case 2: //west
-    //     return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
-    //     break;
-    // case 3: //south
-    //     return greatestIndex(2.0, m_rangeWest.distance(), m_rangeEast.distance());
-    //     break;
-    // case 4: //east
-    //     return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
-    //     break;
-    // }
+    if (((m_rangeNorth.distance()< kWallMaxdist) + (m_rangeWest.distance() < kWallMaxdist) 
+        + (m_rangeSouth.distance() < kWallMaxdist) + (m_rangeEast.distance() < kWallMaxdist)) > 1)
+    {
+        switch (currentSide)
+        {
+        case 1: //north
+            return greatestIndex(2.0, m_rangeEast.distance(), m_rangeWest.distance());
+            break;
+        case 2: //west
+            return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+            break;
+        case 3: //south
+            return greatestIndex(2.0, m_rangeWest.distance(), m_rangeEast.distance());
+            break;
+        case 4: //east
+            return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+            break;
+        }
+    } else { return random(0, 2); }
 }
 
 /**
@@ -1001,7 +1026,8 @@ float getFlameHeading()
     eaDist = (eaDist > 1000) ? 0 : 1023 - eaDist;
     float noBias = (eaDist > weDist) ? 90.0 : 450.0;
 
-    float numerator = (noBias * noDist) + (180.0 * eaDist) + (270.0 * soDist) + (360.0 * weDist);
+    float numerator = (noBias * noDist) + (180.0 * eaDist) + 
+    (270.0 * soDist) + (360.0 * weDist);
     float denominator = noDist + eaDist + weDist + soDist;
     return (numerator / denominator) - 90.0;
 }
@@ -1010,22 +1036,26 @@ int candleVisible()
 {
     int minimumSide = -1;
     int minimum = 4000;
-    if(m_flameNorth.distance() > 0 && m_flameNorth.distance() < minimum)
+    float northDist = m_flameNorth.distance();
+    float westDist = m_flameWest.distance();
+    float southDist = m_flameSouth.distance();
+    float eastDist = m_flameEast.distance();
+    if(northDist > 0 && northDist < minimum && northDist < 200)
     {
         minimum = m_flameNorth.distance();
         minimumSide = 0;
     }
-    if (m_flameWest.distance() > 0 && m_flameWest.distance() < minimum)
+    if (westDist > 0 && westDist < minimum && westDist < 200)
     {
         minimum = m_flameWest.distance();
         minimumSide = 1;
     }
-    if (m_flameSouth.distance() > 0 && m_flameSouth.distance() < minimum)
+    if (southDist > 0 && southDist < minimum && southDist < 200)
     {
         minimum = m_flameSouth.distance();
         minimumSide = 2;
     }
-    if (m_flameEast.distance() > 0 && m_flameEast.distance() < minimum)
+    if (eastDist > 0 && eastDist < minimum && eastDist < 200)
     {
         minimum = m_flameEast.distance();
         minimumSide = 3;
@@ -1048,7 +1078,7 @@ bool homeOnCandle(int d)
         if (m_rangeNorth.distance() > 8.0)
         {
             sensorValue = m_flameNorth.distance();
-            if (previousDirection != 45 && previousDirection !=  315) // First time homing in this direction
+            if (previousDirection != 45 && previousDirection !=  315)
             {
                 previousDirection = 30;
                 change = 0;
@@ -1072,7 +1102,7 @@ bool homeOnCandle(int d)
         if (m_rangeWest.distance() > 8.0)
         {
             sensorValue = m_flameWest.distance();
-            if (previousDirection != 315 && previousDirection !=  225) // First time homing in this direction
+            if (previousDirection != 315 && previousDirection !=  225) 
             {
                 previousDirection = 315;
                 change = 0;
@@ -1096,7 +1126,7 @@ bool homeOnCandle(int d)
         if (m_rangeSouth.distance() > 8.0)
         {
             sensorValue = m_flameSouth.distance();
-            if (previousDirection != 225 && previousDirection !=  135) // First time homing in this direction
+            if (previousDirection != 225 && previousDirection !=  135) 
             {
                 previousDirection = 225;
                 change = 0;
@@ -1120,7 +1150,7 @@ bool homeOnCandle(int d)
         if (m_rangeEast.distance() > 8.0)
         {
             sensorValue = m_flameEast.distance();
-            if (previousDirection != 135 && previousDirection !=  45) // First time homing in this direction
+            if (previousDirection != 135 && previousDirection !=  45) 
             {
                 previousDirection = 135;
                 change = 0;
@@ -1173,3 +1203,60 @@ bool homeOnCandle(int d)
     return false;
 }
 
+float getDisplacementX()
+{
+    return ((m_encoderEast.distance()) + (m_encoderWest.distance())) / 2.0;
+}
+
+float getDisplacementY()
+{
+    return ((-m_encoderNorth.distance()) + (-m_encoderSouth.distance())) / 2.0;
+}
+
+bool driveDistance(int dir, float distance)
+{
+    static float initialDist = (dir==1 || dir==3) ? getDisplacementX() : getDisplacementY();
+    switch (dir)
+    {
+    case 1: //north
+        if (abs(getDisplacementX() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        } else {
+            drive(0);
+            return false;
+        }
+        break;
+    case 2: //west
+        if (abs(getDisplacementY() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        } else {
+            drive(270);
+            return false;
+        }
+        break;
+    case 3: //south
+        if (abs(getDisplacementX() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        } else {
+            drive(180);
+            return false;
+        }
+        break;
+    case 4: //east
+        if (abs(getDisplacementY() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        } else {
+            drive(90);
+            return false;
+        }
+        break;
+    }
+}

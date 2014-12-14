@@ -7,15 +7,15 @@ class SingleEncoder
 {
 public:
 	SingleEncoder(int pin, int ticksPerRev);
-	uint32_t read();
+	int read();
 	float speed();
 	//1 is forwards, 0 is backwards
 	void update(int dir);
-	void write(uint32_t newPosition);
+	void write(int newPosition);
 	int interruptPin;
 	float distance();
 private:
-	uint32_t position;
+	int position;
 	long startTime;
 	int counter;
 	float m_speed;
