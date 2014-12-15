@@ -63,7 +63,7 @@ input.enable {
       document.getElementById("yfield").value = "Y: " + msg + "in";
     }
   });
-  socket.on('heading' function(msg) {
+  socket.on('heading', function(msg) {
     if (msg != null) {
       console.log("heading: " msg);
       document.getElementById("headingfield").value = msg + "˚";
