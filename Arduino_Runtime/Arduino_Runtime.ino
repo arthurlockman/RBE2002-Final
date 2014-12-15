@@ -321,7 +321,7 @@ void navigate()
         case kNavigationHomeOnCandle:
             if (candleSide == -1)
             {
-                changeNavState(kNavigationStart);
+                changeNavState(kNavigationFollowWall);
             }
             else if (homeOnCandle(candleSide))
             {
@@ -1021,27 +1021,30 @@ int getLargestFrontierLeftRight(int currentSide)
             + (southDist < 10.0) + (eastDist < 10.0)) > 1)
     {
         Serial.println("On corner.");
+        Serial.println(m_navigationCurrentWall);
+        Serial.println(m_navigationCurrentDir);
+        Serial.println(currentSide);
         switch (currentSide)
         {
         case 1: //north
-            // return greatestIndex(2.0, eastDist, westDist);
             if (m_navigationCurrentWall == 2) { return 1; }
-            else { return 0; }
+            else if (m_navigationCurrentWall == 4) { return 0; }
+            else { return greatestIndex(2.0, eastDist, westDist); }
             break;
         case 2: //west
-            if (m_navigationCurrentWall == 1) { return 1; }
-            else { return 0; }
-            // return greatestIndex(2.0, northDist, southDist);
+            if (m_navigationCurrentWall == 3) { return 1; }
+            else if (m_navigationCurrentWall == 1) { return 0; }
+            else { return greatestIndex(2.0, northDist, southDist); }
             break;
         case 3: //south
             if (m_navigationCurrentWall == 4) { return 1; }
-            else { return 0; }
-            // return greatestIndex(2.0, westDist, eastDist);
+            else if (m_navigationCurrentWall == 2) { return 0; }
+            else { return greatestIndex(2.0, westDist, eastDist); }
             break;
         case 4: //east
-            if (m_navigationCurrentWall == 3) { return 1; }
-            else { return 0; }
-            // return greatestIndex(2.0, northDist, southDist);
+            if (m_navigationCurrentWall == 1) { return 1; }
+            else if (m_navigationCurrentWall == 3) { return 0; }
+            else { return greatestIndex(2.0, northDist, southDist); }
             break;
         default:
             return 1;
@@ -1105,24 +1108,24 @@ int candleVisible()
     float westDist = m_flameWest.distance();
     float southDist = m_flameSouth.distance();
     float eastDist = m_flameEast.distance();
-    if (northDist > 0 && northDist < minimum && northDist < 200)
+    if (northDist > 0.0 && northDist < minimum && northDist < 48.0)
     {
-        minimum = m_flameNorth.distance();
+        minimum = northDist;
         minimumSide = 0;
     }
-    if (westDist > 0 && westDist < minimum && westDist < 200)
+    if (westDist > 0.0 && westDist < minimum && westDist < 48.0)
     {
-        minimum = m_flameWest.distance();
+        minimum = westDist;
         minimumSide = 1;
     }
-    if (southDist > 0 && southDist < minimum && southDist < 200)
+    if (southDist > 0.0 && southDist < minimum && southDist < 48.0)
     {
-        minimum = m_flameSouth.distance();
+        minimum = southDist;
         minimumSide = 2;
     }
-    if (eastDist > 0 && eastDist < minimum && eastDist < 200)
+    if (eastDist > 0.0 && eastDist < minimum && eastDist < 48.0)
     {
-        minimum = m_flameEast.distance();
+        minimum = eastDist;
         minimumSide = 3;
     }
     return minimumSide;
