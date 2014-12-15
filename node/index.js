@@ -30,7 +30,7 @@ imuprocess.stdout.on('data', function(data) {
         readingCounter++;
     } else if ((sendCounter % 1) == 0) { //slowing down data flow to make it easier for the arduino to process
         serialPort.write("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
-        io.emit('heading' + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]));
+        io.emit('heading', parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]));
         sendCounter = 1;
         //console.log("imu" + parseFloat(data.toString().match(/^\s*-?\d*.\d*/g)[0]) + "\n");
     } else {

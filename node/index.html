@@ -65,7 +65,7 @@ input.enable {
   });
   socket.on('heading', function(msg) {
     if (msg != null) {
-      console.log("heading: " msg);
+      //console.log("heading: " + msg);
       document.getElementById("headingfield").value = msg + "˚";
     }
   });
