@@ -42,26 +42,30 @@ serialPort.on("open", function() {
     console.log("port open");
     serialConnected = true;
     serialPort.on('data', function(data) {
+        data.toString().split('\n').forEach(processSerialIncoming);
         //console.log('data received: ' + data);
-        if (data.toString().substring(0, 5) == "cons:") {
-            writeToConsole(data.toString().substring(5).replace(/\r?\n/g, ""));
-            //io.emit('console', moment().format("h:mm:ss a") + ": " + data.toString().substring(5).replace(/\r?\n/g, ""));
-            //console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
-        } else if (data.toString().substring(0, 4) == "flex")
-        {
-            io.emit('console', 'flex');
-        } else if (data.toString().substring(0, 4) == "flfo")
-        {
-            io.emit('console', 'flfo');
-        } else if (data.toString().substring(0,3) == "dsp")
-        {
-            io.emit('dx', data.toString().substring(3).split(',')[0]);
-            io.emit('dy', data.toString().substring(2).split(',')[1]);
-        } else {
-            console.log(data.toString());
-        }
     });
 });
+
+function processSerialIncoming(element, index, array) {
+        if (data.toString().substring(0, 5) == "cons:") {
+            writeToConsole(element.substring(5).replace(/\r?\n/g, ""));
+            //io.emit('console', moment().format("h:mm:ss a") + ": " + data.toString().substring(5).replace(/\r?\n/g, ""));
+            //console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
+        } else if (element.substring(0, 4) == "flex")
+        {
+            io.emit('console', 'flex');
+        } else if (element.substring(0, 4) == "flfo")
+        {
+            io.emit('console', 'flfo');
+        } else if (element.substring(0,3) == "dsp")
+        {
+            io.emit('dx', element.substring(3).split(',')[0]);
+            io.emit('dy', element.substring(2).split(',')[1]);
+        } else {
+            console.log(element);
+        }
+}
 
 function writeToConsole(message) {
     io.emit('console', moment().format("h:mm:ss a") + ": " + message);

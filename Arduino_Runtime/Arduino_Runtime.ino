@@ -342,11 +342,12 @@ void navigate()
             stopDrive();
             if (candleSide == -1)
             {
+                Serial.println("flex");
+                writeDisplacement(candleSide);
                 changeNavState(kNavigationFlameExtinguished);
             }
             break;
         case kNavigationFlameExtinguished:
-            Serial.println("flex");
             break;
         }
     }
@@ -1016,29 +1017,60 @@ int getLargestFrontierLeftRight(int currentSide)
     float southDist = m_rangeSouth.distance();
     float eastDist = m_rangeEast.distance();
 
-    if (((northDist < kWallMaxdist) + (westDist < kWallMaxdist)
-            + (southDist < kWallMaxdist) + (eastDist < kWallMaxdist)) > 1)
+    if (((northDist < 10.0) + (westDist < 10.0)
+            + (southDist < 10.0) + (eastDist < 10.0)) > 1)
     {
         Serial.println("On corner.");
         switch (currentSide)
         {
         case 1: //north
-            return greatestIndex(2.0, eastDist, westDist);
+            // return greatestIndex(2.0, eastDist, westDist);
+            if (m_navigationCurrentWall == 2) { return 1; }
+            else { return 0; }
             break;
         case 2: //west
-            return greatestIndex(2.0, northDist, southDist);
+            if (m_navigationCurrentWall == 1) { return 1; }
+            else { return 0; }
+            // return greatestIndex(2.0, northDist, southDist);
             break;
         case 3: //south
-            return greatestIndex(2.0, westDist, eastDist);
+            if (m_navigationCurrentWall == 4) { return 1; }
+            else { return 0; }
+            // return greatestIndex(2.0, westDist, eastDist);
             break;
         case 4: //east
-            return greatestIndex(2.0, northDist, southDist);
+            if (m_navigationCurrentWall == 3) { return 1; }
+            else { return 0; }
+            // return greatestIndex(2.0, northDist, southDist);
             break;
+        default:
+            return 1;
         }
     }
     else
     {
-        return random(0, 2);
+        // return random(0, 2);
+        switch (currentSide)
+        {
+        case 1:
+            if (m_navigationCurrentWall == 4) { return 1; }
+            else if (m_navigationCurrentWall == 2) { return 0; }
+            break;
+        case 2:
+            if (m_navigationCurrentWall == 1) { return 1; }
+            else if (m_navigationCurrentWall == 3) { return 0; }
+            break;
+        case 3:
+            if (m_navigationCurrentWall == 2) { return 1; }
+            else if (m_navigationCurrentWall == 3) { return 0; }
+            break;
+        case 4:
+            if (m_navigationCurrentWall == 3) { return 1; }
+            else if (m_navigationCurrentWall == 1) { return 0; }
+            break;
+        default:
+            return 1;
+        }
     }
 }
 
