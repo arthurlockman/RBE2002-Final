@@ -63,6 +63,12 @@ input.enable {
       document.getElementById("yfield").value = "Y: " + msg + "in";
     }
   });
+  socket.on('heading' function(msg) {
+    if (msg != null) {
+      console.log("heading: " msg);
+      document.getElementById("headingfield").value = msg + "˚";
+    }
+  });
 </script>
 
 <ul id="console" style="height:25%; width:100%; position: absolute; top: 0; bottom: 25%; left: 0; right: 0; overflow-x: auto; overflow-y: auto;"></ul>
@@ -81,7 +87,7 @@ input.enable {
     <tr>
       <td style="width:33.3%; height:25%"><input type="text" name="button" id="xfield" value="X: -in" class="text" readonly><input type="text" name="button" id="yfield" value="Y: -in" class="text" readonly></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="SButton" value="South" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 's');"></td>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SEButton" value="East Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fe');"></td>
+      <td style="width:33.3%; height:25%"><input type="text" name="button" id="headingfield" value="-˚" class="text"></td>
     </tr>
     <tr>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="Enable" value="Enable" class="enable" style="background-color:#FFF600" onClick="socket.emit('enable', 'enable');"></td>
