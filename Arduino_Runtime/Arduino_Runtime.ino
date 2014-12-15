@@ -1,4 +1,4 @@
-#include "Robotmap.h"
+ #include "Robotmap.h"
 
 // #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
@@ -11,7 +11,7 @@ int               m_loopState = 0;
 int               m_gyroZero = 0;
 boolean           enabled = false;
 boolean           m_stopped = true;
-boolean           m_navigate = false;
+boolean           m_navigate = true;//false;
 NavigationState   m_navigationState = kNavigationStart;
 NavigationState   m_prevNavState = kNavigationStart;
 int               m_navigationCurrentWall = 1;
@@ -1137,142 +1137,200 @@ bool homeOnCandle(int d)
                                     ((d == 1) ? ((m_navigationCurrentDir == 1) ? 315 : 225) : 
                                     ((d == 2) ? ((m_navigationCurrentDir == 1) ? 225 : 135) :
                                     ((d == 3) ? ((m_navigationCurrentDir == 1) ? 135 : 45) : 0))));
-    static int previous;
-    static int change;
-    int previousChange = change;
+    static int previous = ((d==0)?m_rangeNorth.distance():
+                            ((d==1)?m_rangeWest.distance():
+                            ((d==2)?m_rangeSouth.distance():m_rangeEast.distance())));
     int sensorValue;
-
-    switch (d)
-    {
-    // North
-    case 0:
-        if (m_rangeNorth.distance() > 8.0)
-        {
-            sensorValue = m_flameNorth.distance();
-            if (previousDirection != 45 && previousDirection !=  315)
-            {
-                previousDirection = 45;
-                change = 0;
-                previousChange = 0;
-            }
-            else
-            {
-                previousChange = change;
-                change = sensorValue - previous;
-            }
-        }
-        else
-        {
-            stopDrive();
-            setFans(1);
-            return true;
-        }
-        break;
-    // West
-    case 1:
-        if (m_rangeWest.distance() > 8.0)
-        {
-            sensorValue = m_flameWest.distance();
-            if (previousDirection != 315 && previousDirection !=  225)
-            {
-                previousDirection = 315;
-                change = 0;
-                previousChange = 0;
-            }
-            else
-            {
-                previousChange = change;
-                change = sensorValue - previous;
-            }
-        }
-        else
-        {
-            stopDrive();
-            setFans(2);
-            return true;
-        }
-        break;
-    // South
-    case 2:
-        if (m_rangeSouth.distance() > 8.0)
-        {
-            sensorValue = m_flameSouth.distance();
-            if (previousDirection != 225 && previousDirection !=  135)
-            {
-                previousDirection = 225;
-                change = 0;
-                previousChange = 0;
-            }
-            else
-            {
-                previousChange = change;
-                change = sensorValue - previous;
-            }
-        }
-        else
-        {
-            stopDrive();
-            setFans(3);
-            return true;
-        }
-        break;
-    // East
-    case 3:
-        if (m_rangeEast.distance() > 8.0)
-        {
-            sensorValue = m_flameEast.distance();
-            if (previousDirection != 135 && previousDirection !=  45)
-            {
-                previousDirection = 135;
-                change = 0;
-                previousChange = 0;
-            }
-            else
-            {
-                previousChange = change;
-                change = sensorValue - previous;
-            }
-        }
-        else
-        {
-            stopDrive();
-            setFans(4);
-            return true;
-        }
-        break;
+    switch(d){
+        case 0://north
+            sensorValue = m_rangeNorth.distance();
+            break;
+        case 1: //west
+            sensorValue = m_rangeWest.distance();
+            break;
+        case 2: //south
+            sensorValue = m_rangeSouth.distance();
+            break;
+        case 3: //east
+            sensorValue = m_rangeEast.distance();
+            break;
     }
-    // if(previousChange < 0 && change > 0)
-    // {
-    //     return true;
-    // }
-
-    if (change <= 0)
-    {
-        previousDirection = previousDirection;
-    }
-    else
-    {
-        switch (d)
-        {
-        case 0:
-            previousDirection = (previousDirection == 45) ? 315 : 45;
-            break;
-        case 1:
-            previousDirection = (previousDirection == 315) ? 225 : 315;
-            break;
-        case 2:
-            previousDirection = (previousDirection == 225) ? 135 : 225;
-            break;
-        case 4:
-            previousDirection = (previousDirection == 135) ? 45 : 135;
-            break;
+    Serial.print(sensorValue);
+    Serial.print('\t');
+    Serial.println(previous);
+    if(sensorValue<8){
+        stopDrive();
+        setFans(d+1);
+        return true;
+    } else{
+        if(abs(sensorValue-previous)>20){
+            Serial.println("switched");
+            switch (d)
+            {
+            case 0:
+                previousDirection = (previousDirection == 45) ? 315 : 45;
+                break;
+            case 1:
+                previousDirection = (previousDirection == 315) ? 225 : 315;
+                break;
+            case 2:
+                previousDirection = (previousDirection == 225) ? 135 : 225;
+                break;
+            case 3:
+                previousDirection = (previousDirection == 135) ? 45 : 135;
+                break;
+            }
         }
     }
-
-    previous = sensorValue;
+    previous=sensorValue;
     drive(previousDirection);
     return false;
+
+
+
+
+//     static int previousDirection = ((d == 0) ? ((m_navigationCurrentDir == 1) ? 45 : 315) :
+//                                     ((d == 1) ? ((m_navigationCurrentDir == 1) ? 315 : 225) : 
+//                                     ((d == 2) ? ((m_navigationCurrentDir == 1) ? 225 : 135) :
+//                                     ((d == 3) ? ((m_navigationCurrentDir == 1) ? 135 : 45) : 0))));
+//     static int previous;
+//     static int change;
+//     int previousChange = change;
+//     int sensorValue;
+
+//     switch (d)
+//     {
+//     // North
+//     case 0:
+//         if (m_rangeNorth.distance() > 8.0)
+//         {
+//             sensorValue = m_flameNorth.distance();
+//             if (previousDirection != 45 && previousDirection !=  315)
+//             {
+//                 previousDirection = 45;
+//                 change = 0;
+//                 previousChange = 0;
+//             }
+//             else
+//             {
+//                 previousChange = change;
+//                 change = sensorValue - previous;
+//             }
+//         }
+//         else
+//         {
+//             stopDrive();
+//             setFans(1);
+//             return true;
+//         }
+//         break;
+//     // West
+//     case 1:
+//         if (m_rangeWest.distance() > 8.0)
+//         {
+//             sensorValue = m_flameWest.distance();
+//             if (previousDirection != 315 && previousDirection !=  225)
+//             {
+//                 previousDirection = 315;
+//                 change = 0;
+//                 previousChange = 0;
+//             }
+//             else
+//             {
+//                 previousChange = change;
+//                 change = sensorValue - previous;
+//             }
+//         }
+//         else
+//         {
+//             stopDrive();
+//             setFans(2);
+//             return true;
+//         }
+//         break;
+//     // South
+//     case 2:
+//         if (m_rangeSouth.distance() > 8.0)
+//         {
+//             sensorValue = m_flameSouth.distance();
+//             if (previousDirection != 225 && previousDirection !=  135)
+//             {
+//                 previousDirection = 225;
+//                 change = 0;
+//                 previousChange = 0;
+//             }
+//             else
+//             {
+//                 previousChange = change;
+//                 change = sensorValue - previous;
+//             }
+//         }
+//         else
+//         {
+//             stopDrive();
+//             setFans(3);
+//             return true;
+//         }
+//         break;
+//     // East
+//     case 3:
+//         if (m_rangeEast.distance() > 8.0)
+//         {
+//             sensorValue = m_flameEast.distance();
+//             if (previousDirection != 135 && previousDirection !=  45)
+//             {
+//                 previousDirection = 135;
+//                 change = 0;
+//                 previousChange = 0;
+//             }
+//             else
+//             {
+//                 previousChange = change;
+//                 change = sensorValue - previous;
+//             }
+//         }
+//         else
+//         {
+//             stopDrive();
+//             setFans(4);
+//             return true;
+//         }
+//         break;
+//     }
+//     // if(previousChange < 0 && change > 0)
+//     // {
+//     //     return true;
+//     // }
+
+//     if (change <= 0)
+//     {
+//         previousDirection = previousDirection;
+//     }
+//     else
+//     {
+//         switch (d)
+//         {
+//         case 0:
+//             previousDirection = (previousDirection == 45) ? 315 : 45;
+//             break;
+//         case 1:
+//             previousDirection = (previousDirection == 315) ? 225 : 315;
+//             break;
+//         case 2:
+//             previousDirection = (previousDirection == 225) ? 135 : 225;
+//             break;
+//         case 4:
+//             previousDirection = (previousDirection == 135) ? 45 : 135;
+//             break;
+//         }
+//     }
+
+//     previous = sensorValue;
+//     drive(previousDirection);
+//     return false;
 }
+
+
 
 float getDisplacementX()
 {
