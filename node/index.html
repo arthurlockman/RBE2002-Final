@@ -35,6 +35,14 @@ input.enable {
   var socket = io.connect('/');
   socket.on('console', function(msg) {
       console.log("got message");
+      if (msg == "flfo") {
+        console.log("found flame!");
+        document.getElementById("NWButton").style.background='#FF00FF';
+      } 
+      if (msg == "flex") {
+        console.log("extinguished flame!");
+        document.getElementById("NEButton").style.background='#FF00FF';
+      }
 	  $('#console').prepend($('<li>').text(msg));
   });
 </script>
@@ -43,9 +51,9 @@ input.enable {
 <table border="1" style="height:75%%; width:100%; position: absolute; top: 25%; bottom: 0; left: 0; right: 0;border:none; text-align:center" >
   <tbody>
     <tr>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NWButtom" value="West Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fw');"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NWButton" value="Flame" class="button" style="background-color:#FFFFFF" onClick=""></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="NButton" value="North" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 'n');"></td>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NEButton" value="North Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fn');"></td>
+      <td style="width:33.3%; height:25%"><input type="button" name="button" id="NEButton" value="Extinguish" class="button" style="background-color:#FFFFFF" onClick=""></td>
     </tr>
     <tr>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="WButton" value="West" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 'w');"></td>

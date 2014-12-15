@@ -61,6 +61,10 @@ void setup()
 
 void loop()
 {
+    if (millis() > 20000)
+    {
+        Serial.println("flfo");
+    }
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -336,6 +340,7 @@ void navigate()
         case kNavigtationApproachCandle:
             if (driveDistance((candleSide + 1), 4.0))
             {
+                Serial.println("flfo");
                 changeNavState(kNavigationExtinguishFlame);
             }
             break;
@@ -351,6 +356,13 @@ void navigate()
                 printToConsole(out);
                 stopDrive();
             }
+            if (candleSide == -1)
+            {
+                changeNavState(kNavigationFlameExtinguished);
+            }
+            break;
+        case kNavigationFlameExtinguished:
+            Serial.println("flex");
             break;
         }
     }

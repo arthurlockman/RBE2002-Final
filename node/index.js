@@ -47,6 +47,12 @@ serialPort.on("open", function() {
             writeToConsole(data.toString().substring(5).replace(/\r?\n/g, ""));
             //io.emit('console', moment().format("h:mm:ss a") + ": " + data.toString().substring(5).replace(/\r?\n/g, ""));
             //console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
+        } else if (data.toString().substring(0, 4) == "flex")
+        {
+            io.emit('console', 'flex');
+        } else if (data.toString().substring(0, 4) == "flfo")
+        {
+            io.emit('console', 'flfo');
         } else {
             console.log(data.toString());
         }
