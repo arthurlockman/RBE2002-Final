@@ -48,7 +48,7 @@ serialPort.on("open", function() {
 });
 
 function processSerialIncoming(element, index, array) {
-        if (data.toString().substring(0, 5) == "cons:") {
+        if (element.substring(0, 5) == "cons:") {
             writeToConsole(element.substring(5).replace(/\r?\n/g, ""));
             //io.emit('console', moment().format("h:mm:ss a") + ": " + data.toString().substring(5).replace(/\r?\n/g, ""));
             //console.log("got console message: \""+ data.toString().substring(5).replace(/\r?\n/g, "") + "\"");
