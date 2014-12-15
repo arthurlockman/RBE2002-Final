@@ -4,7 +4,7 @@ var io = require('socket.io')(http);
 var enabled = false;
 var serialConnected = false;
 var SerialPort = require("serialport").SerialPort;
-var serialPort = new SerialPort("/dev/tty.usbmodem1421", {
+var serialPort = new SerialPort("/dev/ttyACM0", {
       baudrate: 115200
 });
 var moment = require('moment');
