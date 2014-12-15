@@ -53,18 +53,10 @@ void setup()
     pinMode(kFanSouth, OUTPUT);
     pinMode(kFanEast, OUTPUT);
     setFans(0);
-
-    //Setup timer interrupts
-    // Timer1.initialize(kISRRate);
-    // Timer1.attachInterrupt(imuRoutine);
 }
 
 void loop()
 {
-    if (millis() > 20000)
-    {
-        Serial.println("flfo");
-    }
     while (Serial.available() > 0)
     {
         String command = Serial.readStringUntil('\n');
@@ -342,20 +334,12 @@ void navigate()
             {
                 Serial.println("flfo");
                 changeNavState(kNavigationExtinguishFlame);
+                writeDisplacement(candleSide);
+                stopDrive();
             }
             break;
         case kNavigationExtinguishFlame:
-            if (printCounter == 0)
-            {
-                String out;
-                out += "Displacement: ";
-                out += (int)getDisplacementX();
-                out += '\t';
-                out += (int)getDisplacementY();
-                printCounter++;
-                printToConsole(out);
-                stopDrive();
-            }
+            stopDrive();
             if (candleSide == -1)
             {
                 changeNavState(kNavigationFlameExtinguished);
@@ -366,6 +350,33 @@ void navigate()
             break;
         }
     }
+}
+
+void writeDisplacement(int candleSide)
+{
+    float dispx = getDisplacementX();
+    float dispy = getDisplacementY();
+    switch (candleSide)
+    {
+    case 0:
+        dispx += 6.0;
+        break;
+    case 1:
+        dispy += 6.0;
+        break;
+    case 2:
+        dispx -= 6.0;
+        break;
+    case 3:
+        dispy -= 6.0;
+        break;
+    }
+    String out;
+    out += "dsp";
+    out += (int)dispx;
+    out += ",";
+    out += (int)dispy;
+    Serial.println(out);
 }
 
 void changeNavState(NavigationState navState)
@@ -988,37 +999,47 @@ void lockRotation()
 
 int getLargestFrontier()
 {
-    return greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), 
-        m_rangeEast.distance(), m_rangeSouth.distance());
+    return greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(),
+                         m_rangeEast.distance(), m_rangeSouth.distance());
 }
 
 int getSmallestFrontier()
 {
-    return leastIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(), 
-        m_rangeEast.distance(), m_rangeSouth.distance());
+    return leastIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(),
+                      m_rangeEast.distance(), m_rangeSouth.distance());
 }
 
 int getLargestFrontierLeftRight(int currentSide)
 {
-    if (((m_rangeNorth.distance()< kWallMaxdist) + (m_rangeWest.distance() < kWallMaxdist) 
-        + (m_rangeSouth.distance() < kWallMaxdist) + (m_rangeEast.distance() < kWallMaxdist)) > 1)
+    float northDist = m_rangeNorth.distance();
+    float westDist = m_rangeWest.distance();
+    float southDist = m_rangeSouth.distance();
+    float eastDist = m_rangeEast.distance();
+
+    if (((northDist < kWallMaxdist) + (westDist < kWallMaxdist)
+            + (southDist < kWallMaxdist) + (eastDist < kWallMaxdist)) > 1)
     {
+        Serial.println("On corner.");
         switch (currentSide)
         {
         case 1: //north
-            return greatestIndex(2.0, m_rangeEast.distance(), m_rangeWest.distance());
+            return greatestIndex(2.0, eastDist, westDist);
             break;
         case 2: //west
-            return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+            return greatestIndex(2.0, northDist, southDist);
             break;
         case 3: //south
-            return greatestIndex(2.0, m_rangeWest.distance(), m_rangeEast.distance());
+            return greatestIndex(2.0, westDist, eastDist);
             break;
         case 4: //east
-            return greatestIndex(2.0, m_rangeNorth.distance(), m_rangeSouth.distance());
+            return greatestIndex(2.0, northDist, southDist);
             break;
         }
-    } else { return random(0, 2); }
+    }
+    else
+    {
+        return random(0, 2);
+    }
 }
 
 /**
@@ -1038,8 +1059,8 @@ float getFlameHeading()
     eaDist = (eaDist > 1000) ? 0 : 1023 - eaDist;
     float noBias = (eaDist > weDist) ? 90.0 : 450.0;
 
-    float numerator = (noBias * noDist) + (180.0 * eaDist) + 
-    (270.0 * soDist) + (360.0 * weDist);
+    float numerator = (noBias * noDist) + (180.0 * eaDist) +
+                      (270.0 * soDist) + (360.0 * weDist);
     float denominator = noDist + eaDist + weDist + soDist;
     return (numerator / denominator) - 90.0;
 }
@@ -1052,7 +1073,7 @@ int candleVisible()
     float westDist = m_flameWest.distance();
     float southDist = m_flameSouth.distance();
     float eastDist = m_flameEast.distance();
-    if(northDist > 0 && northDist < minimum && northDist < 200)
+    if (northDist > 0 && northDist < minimum && northDist < 200)
     {
         minimum = m_flameNorth.distance();
         minimumSide = 0;
@@ -1077,7 +1098,10 @@ int candleVisible()
 
 bool homeOnCandle(int d)
 {
-    static int previousDirection;
+    static int previousDirection = ((d == 0) ? ((m_navigationCurrentDir == 1) ? 45 : 315) :
+                                    ((d == 1) ? ((m_navigationCurrentDir == 1) ? 315 : 225) : 
+                                    ((d == 2) ? ((m_navigationCurrentDir == 1) ? 225 : 135) :
+                                    ((d == 3) ? ((m_navigationCurrentDir == 1) ? 135 : 45) : 0))));
     static int previous;
     static int change;
     int previousChange = change;
@@ -1092,7 +1116,7 @@ bool homeOnCandle(int d)
             sensorValue = m_flameNorth.distance();
             if (previousDirection != 45 && previousDirection !=  315)
             {
-                previousDirection = 30;
+                previousDirection = 45;
                 change = 0;
                 previousChange = 0;
             }
@@ -1114,7 +1138,7 @@ bool homeOnCandle(int d)
         if (m_rangeWest.distance() > 8.0)
         {
             sensorValue = m_flameWest.distance();
-            if (previousDirection != 315 && previousDirection !=  225) 
+            if (previousDirection != 315 && previousDirection !=  225)
             {
                 previousDirection = 315;
                 change = 0;
@@ -1138,7 +1162,7 @@ bool homeOnCandle(int d)
         if (m_rangeSouth.distance() > 8.0)
         {
             sensorValue = m_flameSouth.distance();
-            if (previousDirection != 225 && previousDirection !=  135) 
+            if (previousDirection != 225 && previousDirection !=  135)
             {
                 previousDirection = 225;
                 change = 0;
@@ -1162,7 +1186,7 @@ bool homeOnCandle(int d)
         if (m_rangeEast.distance() > 8.0)
         {
             sensorValue = m_flameEast.distance();
-            if (previousDirection != 135 && previousDirection !=  45) 
+            if (previousDirection != 135 && previousDirection !=  45)
             {
                 previousDirection = 135;
                 change = 0;
@@ -1227,7 +1251,7 @@ float getDisplacementY()
 
 bool driveDistance(int dir, float distance)
 {
-    static float initialDist = (dir==1 || dir==3) ? getDisplacementX() : getDisplacementY();
+    static float initialDist = (dir == 1 || dir == 3) ? getDisplacementX() : getDisplacementY();
     switch (dir)
     {
     case 1: //north
@@ -1235,7 +1259,9 @@ bool driveDistance(int dir, float distance)
         {
             stopDrive();
             return true;
-        } else {
+        }
+        else
+        {
             drive(0);
             return false;
         }
@@ -1245,7 +1271,9 @@ bool driveDistance(int dir, float distance)
         {
             stopDrive();
             return true;
-        } else {
+        }
+        else
+        {
             drive(270);
             return false;
         }
@@ -1255,7 +1283,9 @@ bool driveDistance(int dir, float distance)
         {
             stopDrive();
             return true;
-        } else {
+        }
+        else
+        {
             drive(180);
             return false;
         }
@@ -1265,10 +1295,13 @@ bool driveDistance(int dir, float distance)
         {
             stopDrive();
             return true;
-        } else {
+        }
+        else
+        {
             drive(90);
             return false;
         }
         break;
     }
 }
+

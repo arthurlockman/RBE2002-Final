@@ -17,6 +17,12 @@ input.button {
 	-webkit-appearance: none;
 	font-size:300%;
 }
+input.text
+{
+  height:50%;
+  width:90%;
+  font-size:200%;
+}
 input.enable {
 	-webkit-appearance:none;
 	height:100%;
@@ -45,6 +51,18 @@ input.enable {
       }
 	  $('#console').prepend($('<li>').text(msg));
   });
+  socket.on('dx', function(msg) {
+    if (msg != null) {
+      console.log("dx: " + msg);
+      document.getElementById("xfield").value = "X: " + msg + "in";
+    }
+  });
+  socket.on('dy', function(msg) {
+    if (msg != null) {
+      console.log("dy: " + msg);
+      document.getElementById("yfield").value = "Y: " + msg + "in";
+    }
+  });
 </script>
 
 <ul id="console" style="height:25%; width:100%; position: absolute; top: 0; bottom: 25%; left: 0; right: 0; overflow-x: auto; overflow-y: auto;"></ul>
@@ -61,7 +79,7 @@ input.enable {
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="EButton" value="East" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 'e');"></td>
     </tr>
     <tr>
-      <td style="width:33.3%; height:25%"><input type="button" name="button" id="SWButton" value="South Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fs');"></td>
+      <td style="width:33.3%; height:25%"><input type="text" name="button" id="xfield" value="X: -in" class="text" readonly><input type="text" name="button" id="yfield" value="Y: -in" class="text" readonly></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="SButton" value="South" class="button" style="background-color:#00FF34" onClick="socket.emit('command', 's');"></td>
       <td style="width:33.3%; height:25%"><input type="button" name="button" id="SEButton" value="East Fan" class="button" style="background-color:#00FFD3" onClick="socket.emit('command', 'fe');"></td>
     </tr>

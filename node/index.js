@@ -4,7 +4,7 @@ var io = require('socket.io')(http);
 var enabled = false;
 var serialConnected = false;
 var SerialPort = require("serialport").SerialPort;
-var serialPort = new SerialPort("/dev/ttyACM0", {
+var serialPort = new SerialPort("/dev/tty.usbmodem1421", {
       baudrate: 115200
 });
 var moment = require('moment');
@@ -53,6 +53,10 @@ serialPort.on("open", function() {
         } else if (data.toString().substring(0, 4) == "flfo")
         {
             io.emit('console', 'flfo');
+        } else if (data.toString().substring(0,3) == "dsp")
+        {
+            io.emit('dx', data.toString().substring(3).split(',')[0]);
+            io.emit('dy', data.toString().substring(2).split(',')[1]);
         } else {
             console.log(data.toString());
         }
