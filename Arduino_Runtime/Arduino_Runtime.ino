@@ -1223,48 +1223,62 @@ int candleVisible()
 
 bool homeOnCandle(int d)
 {
-
-    static int homeState=1;
-    static int previousDirection=((d == 0) ? ((m_navigationCurrentDir == 1) ? 90 : 270) :
-                                    ((d == 1) ? ((m_navigationCurrentDir == 1) ? 0 : 180) :
-                                     ((d == 2) ? ((m_navigationCurrentDir == 1) ? 270 : 90) :
-                                      ((d == 3) ? ((m_navigationCurrentDir == 1) ? 180 : 0) : 0))));
+    static int previousd=d;
+    static int homeState=2;
+    static bool hasSeen=true;
+    static int previousDirection=((d == 0) ? (((m_navigationCurrentWall==3&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==4) ? 270 : 90) :
+                                    ((d == 1) ? (((m_navigationCurrentWall==4&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==1) ? 180 : 0) :
+                                     ((d == 2) ? (((m_navigationCurrentWall==1&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==2) ? 90 : 270) :
+                                      ((d == 3) ? (((m_navigationCurrentWall==2&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==3) ? 0 : 180) : 0))));
+    if(d==-1){
+        d=previousd;
+        if(hasSeen){
+            previousDirection=(previousDirection+180)%360;
+        }
+        hasSeen=false;
+    }else{
+        previousd=d;
+        hasSeen=true;
+    }
     Ultrasonic *candleSensor = (d==0)?&m_rangeNorth:
                                 ((d==1)?&m_rangeWest:
                                     ((d==2)?&m_rangeSouth:&m_rangeEast));
+
     static float startLoc;
+    static float highVal=candleSensor->distance();
     static float previous= candleSensor->distance();
     float sensorValue=candleSensor->distance();
     switch (homeState) {
         case 1://finds candle
-          if(sensorValue-previous<-10){
+          if(sensorValue-highVal<-5){
             homeState++;
             startLoc=(d==0||d==2)?getDisplacementY():getDisplacementX();
           }
           break;
         case 2://starts driving towards candle
-          previousDirection=360-d*90;
+          previousDirection=(360-d*90)%360;
           if(sensorValue<8){
-            stopDrive();
+            setFans(d+1);
             return true;
           }else if(sensorValue-previous>10){
             homeState++;
+            highVal=sensorValue;
             previousDirection=(360-d*90+90)%360;
           }
           break;
         case 3: //recenters on flame
-          if(sensorValue-previous<-10){
+          if(sensorValue-highVal<-5){
             homeState=2;
-            startLoc= (d==0||d==2)?getDisplacementY():getDisplacementX();
-          }else if(((d==0||d==2)?getDisplacementY():getDisplacementX())>startLoc+5){
+            startLoc= (d==0||d==2)?getDisplacementX():getDisplacementY();
+          }else if(((d==0||d==2)?getDisplacementX():getDisplacementY())>startLoc+5){
             previousDirection=previousDirection+180%360;
             homeState++;
           }
           break;
         case 4:
-          if(sensorValue-previous<-10){
+          if(sensorValue-highVal<-5){
             homeState=2;
-            startLoc=(d==0||d==2)?getDisplacementY():getDisplacementX();
+            startLoc=(d==0||d==2)?getDisplacementX():getDisplacementY();
           }
           break;
     }
@@ -1484,3 +1498,29 @@ bool driveDistance(int dir, float distance)
     }
 }
 
+float getFlameHeight(int d){
+    float sensorVal;
+    switch (d) {
+        case 0:
+          sensorVal=m_flameNorth.read();
+          break;
+        case 1:
+          sensorVal=m_flameWest.read();
+          break;
+        case 2:
+          sensorVal=m_flameSouth.read();
+          break;
+        case 3:
+          sensorVal=m_flameEast.read();
+          break;
+    }
+    float calibratedValue=11+(-.0002*pow(sensorVal,3)+.0156*pow(sensorVal,2)-.424*sensorVal+2.386);
+    if(calibratedValue>11){
+        calibratedValue=11;
+    }else if(calibratedValue<7.5){
+        calibratedValue=7.5;
+    }else{
+        calibrated = 9.5;
+    }
+    return calibratedValue;
+}
