@@ -16,8 +16,8 @@ NavigationState   m_navigationState = kNavigationStart;
 NavigationState   m_prevNavState = kNavigationStart;
 int               m_navigationCurrentWall = 1;
 int               m_navigationCurrentDir = 1;
-SingleEncoder     m_encoderNorth(kNorthEncoderA, kSingleEncTicksPerRev);
-SingleEncoder     m_encoderWest(kWestEncoderA, kSingleEncTicksPerRev);
+Encoder           m_encoderNorth(kNorthEncoderA, kNorthEncoderB);
+Encoder           m_encoderWest(kWestEncoderA, kWestEncoderB);
 SingleEncoder     m_encoderEast(kEastEncoderA, kSingleEncTicksPerRev);
 SingleEncoder     m_encoderSouth(kSouthEncoderA, kSingleEncTicksPerRev);
 Ultrasonic        m_rangeNorth(kNorthRangeOut);
@@ -45,8 +45,8 @@ void setup()
     // Attach interrupt for speed-only encoders
     attachInterrupt(m_encoderEast.interruptPin, updateEastEncoder, CHANGE);
     attachInterrupt(m_encoderSouth.interruptPin, updateSouthEncoder, CHANGE);
-    attachInterrupt(m_encoderNorth.interruptPin, updateNorthEncoder, CHANGE);
-    attachInterrupt(m_encoderWest.interruptPin, updateWestEncoder, CHANGE);
+    // attachInterrupt(m_encoderNorth.interruptPin, updateNorthEncoder, CHANGE);
+    // attachInterrupt(m_encoderWest.interruptPin, updateWestEncoder, CHANGE);
 
     // Initialize fan control
     pinMode(kFanNorth, OUTPUT);
@@ -188,6 +188,8 @@ void navigate()
             m_navigationCurrentDir  = 0;
             Serial.println(m_navigationCurrentDir);
             changeNavState(kNavigationFollowWall);
+            m_navStack.push((FollowCommand){m_navigationCurrentWall, 
+                ((m_navigationCurrentDir == 1) ? 0 : 1)});
             break;
         case kNavigationFollowWall:
             if (candleSide != -1)
@@ -200,6 +202,7 @@ void navigate()
             }
             break;
         case kNavigationDecideNext:
+            writeDisplacement(candleSide);
             Serial.println("finding next");
             if (!(m_lightNorth.read() || m_lightWest.read() || m_lightSouth.read() || m_lightEast.read()))
             {
@@ -622,25 +625,25 @@ void updateSouthEncoder()
     m_encoderSouth.update(southDirection);
 }
 
-/**
- * @brief Updates the north encoder.
- * @details Updates the north encoder with the proper
- * direction variable.
- */
-void updateNorthEncoder()
-{
-    m_encoderNorth.update(southDirection);
-}
+// /**
+//  * @brief Updates the north encoder.
+//  * @details Updates the north encoder with the proper
+//  * direction variable.
+//  */
+// void updateNorthEncoder()
+// {
+//     m_encoderNorth.update(northDirection);
+// }
 
-/**
- * @brief Updates the west encoder.
- * @details Updates the west encoder with the proper
- * direction variable.
- */
-void updateWestEncoder()
-{
-    m_encoderWest.update(eastDirection);
-}
+// /**
+//  * @brief Updates the west encoder.
+//  * @details Updates the west encoder with the proper
+//  * direction variable.
+//  */
+// void updateWestEncoder()
+// {
+//     m_encoderWest.update(westDirection);
+// }
 
 /**
  * @brief Prints to console.
@@ -789,6 +792,10 @@ void updateDrive()
         m_south.write(90);
     }
 #else
+    if (northSetpoint < 90) southDirection = 1;
+    else southDirection = 0;
+    if (westSetpoint < 90) eastDirection = 0;
+    else eastDirection = 1;
     float headingError = imuRotation - startOrientation;
     int northSetpointAdj = northSetpoint + (int)(headingError * kCompassCorrectionP);
     int westSetpointAdj  = westSetpoint - (int)(headingError * kCompassCorrectionP);
@@ -992,33 +999,6 @@ void setFans(int fan)
         digitalWrite(kFanSouth, HIGH);
         digitalWrite(kFanEast, HIGH);
         break;
-    }
-}
-
-/**
- * @brief ISR Routine
- * @details This function handles updating motor PID
- * control variables, as well as other ISR business.
- */
-void periodicUpdate()
-{
-    float northError = northSetpoint - m_encoderNorth.speed();
-    float westError  = westSetpoint  - m_encoderWest.speed();
-    float southError = southSetpoint - m_encoderSouth.speed();
-    float eastError  = eastSetpoint  - m_encoderEast.speed();
-    if (!m_stopped)
-    {
-        northSpeed = northError * kDriveP + m_encoderNorth.speed();
-        westSpeed  = westError  * kDriveP + m_encoderWest.speed();
-        southSpeed = southError * kDriveP + m_encoderSouth.speed();
-        eastSpeed  = eastError  * kDriveP + m_encoderEast.speed();
-    }
-    else
-    {
-        northSpeed = 90;
-        southSpeed = 90;
-        eastSpeed  = 90;
-        westSpeed  = 90;
     }
 }
 
@@ -1333,12 +1313,12 @@ bool homeOnCandle(int d)
 
 float getDisplacementX()
 {
-    return ((m_encoderEast.distance()) + (m_encoderWest.distance())) / 2.0;
+    return ((float)m_encoderWest.read() / 360.0) * 2.75 * M_PI;
 }
 
 float getDisplacementY()
 {
-    return ((-m_encoderNorth.distance()) + (-m_encoderSouth.distance())) / 2.0;
+    return ((float)m_encoderNorth.read() / 360.0) * 2.75 * M_PI;
 }
 
 bool driveDistanceUltrasonic(int dir, float distance)

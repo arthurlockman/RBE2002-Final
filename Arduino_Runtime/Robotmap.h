@@ -9,6 +9,7 @@
 #include "LightSensor.h"
 #include "FlameSensor.h"
 #include "StackList.h"
+#include "Encoder.h"
 
 enum MotorPins
 {
@@ -91,6 +92,8 @@ float startOrientation;
 
 //Drive storage values
 int currentHeading;
+int northDirection = 1;
+int westDirection = 1;
 int southDirection = 1;
 int eastDirection = 1;
 
