@@ -62,6 +62,7 @@ function processSerialIncoming(element, index, array) {
         {
             io.emit('dx', element.substring(3).split(',')[0]);
             io.emit('dy', element.substring(2).split(',')[1]);
+            io.emit('dz', element.substring(2).split(',')[2]);
         } else {
             console.log(element);
         }

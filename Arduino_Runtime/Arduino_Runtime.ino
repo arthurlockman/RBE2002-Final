@@ -11,7 +11,7 @@ int               m_loopState = 0;
 int               m_gyroZero = 0;
 boolean           enabled = false;
 boolean           m_stopped = true;
-boolean           m_navigate = true;
+boolean           m_navigate = false;
 NavigationState   m_navigationState = kNavigationStart;
 NavigationState   m_prevNavState = kNavigationStart;
 int               m_navigationCurrentWall = 1;
@@ -403,6 +403,8 @@ void writeDisplacement(int candleSide)
     out += (int)dispx;
     out += ",";
     out += (int)dispy;
+    out += ",";
+    out += (int)getFlameHeight(candleSide);
     Serial.println(out);
 }
 
@@ -1376,7 +1378,7 @@ bool homeOnCandle(int d)
 
 float getDisplacementX()
 {
-    return ((float)m_encoderWest.read() / 360.0) * 2.75 * M_PI;
+    return -((float)m_encoderWest.read() / 360.0) * 2.75 * M_PI;
 }
 
 float getDisplacementY()
@@ -1514,12 +1516,12 @@ float getFlameHeight(int d){
           sensorVal=m_flameEast.read();
           break;
     }
-    if(calibratedValue<20){
-        calibratedValue=11;
-    }else if(calibratedValue<30){
-        calibratedValue=9.5;
+    if(sensorVal<20){
+        sensorVal = 11;
+    }else if(sensorVal<30){
+        sensorVal = 9.5;
     }else{
-        calibratedValue = 7.5;
+        sensorVal = 7.5;
     }
-    return calibratedValue;
+    return sensorVal;
 }
