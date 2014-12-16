@@ -336,7 +336,7 @@ void navigate()
             break;
         case kNavigationExtinguishFlame:
             stopDrive();
-            if (candleSide == -1 && printCounter == 2000)
+            if (candleSide == -1 && printCounter == 4000)
             {
                 Serial.println("flex");
                 writeDisplacement(candleSide);
@@ -1299,8 +1299,6 @@ bool homeOnCandle(int d)
     drive(previousDirection);
     return false;
 }
-
-
 
 float getDisplacementX()
 {
