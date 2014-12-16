@@ -11,7 +11,7 @@ int               m_loopState = 0;
 int               m_gyroZero = 0;
 boolean           enabled = false;
 boolean           m_stopped = true;
-boolean           m_navigate = false;
+boolean           m_navigate = true;
 NavigationState   m_navigationState = kNavigationStart;
 NavigationState   m_prevNavState = kNavigationStart;
 int               m_navigationCurrentWall = 1;
@@ -1223,92 +1223,141 @@ int candleVisible()
 
 bool homeOnCandle(int d)
 {
-    static int previousDirection = ((d == 0) ? ((m_navigationCurrentDir == 1) ? 45 : 315) :
-                                    ((d == 1) ? ((m_navigationCurrentDir == 1) ? 315 : 225) :
-                                     ((d == 2) ? ((m_navigationCurrentDir == 1) ? 225 : 135) :
-                                      ((d == 3) ? ((m_navigationCurrentDir == 1) ? 135 : 45) : 0))));
-    static int previous = ((d == 0) ? m_rangeNorth.distance() :
-                           ((d == 1) ? m_rangeWest.distance() :
-                            ((d == 2) ? m_rangeSouth.distance() : m_rangeEast.distance())));
-    static int switched = 0;
-    static int lastD = 0;
-    int sensorValue;
 
-    if (switched == 0 && d == -1)
-    {
-        switch (d)
-        {
-        case 0:
-            previousDirection = (previousDirection == 45) ? 315 : 45;
-            break;
-        case 1:
-            previousDirection = (previousDirection == 315) ? 225 : 315;
-            break;
-        case 2:
-            previousDirection = (previousDirection == 225) ? 135 : 225;
-            break;
-        case 3:
-            previousDirection = (previousDirection == 135) ? 45 : 135;
-            break;
-        }
-        switched = 1;
-    }
-    else
-    {
-        switched = 0;
-        lastD = d;
-        switch (d)
-        {
-        case 0://north
-            sensorValue = m_rangeNorth.distance();
-            break;
-        case 1: //west
-            sensorValue = m_rangeWest.distance();
-            break;
-        case 2: //south
-            sensorValue = m_rangeSouth.distance();
-            break;
-        case 3: //east
-            sensorValue = m_rangeEast.distance();
-            break;
-        }
-        if (sensorValue < 8)
-        {
+    static int homeState=1;
+    static int previousDirection=((d == 0) ? ((m_navigationCurrentDir == 1) ? 90 : 270) :
+                                    ((d == 1) ? ((m_navigationCurrentDir == 1) ? 0 : 180) :
+                                     ((d == 2) ? ((m_navigationCurrentDir == 1) ? 270 : 90) :
+                                      ((d == 3) ? ((m_navigationCurrentDir == 1) ? 180 : 0) : 0))));
+    Ultrasonic *candleSensor = (d==0)?&m_rangeNorth:
+                                ((d==1)?&m_rangeWest:
+                                    ((d==2)?&m_rangeSouth:&m_rangeEast));
+    static float startLoc;
+    static float previous= candleSensor->distance();
+    float sensorValue=candleSensor->distance();
+    switch (homeState) {
+        case 1://finds candle
+          if(sensorValue-previous<-10){
+            homeState++;
+            startLoc=(d==0||d==2)?getDisplacementY():getDisplacementX();
+          }
+          break;
+        case 2://starts driving towards candle
+          previousDirection=360-d*90;
+          if(sensorValue<8){
             stopDrive();
-            setFans(d + 1);
             return true;
-        }
-        else
-        {
-            if (abs(sensorValue - previous) > 10)
-            {
-                Serial.println("switched");
-                m_homeCounter = 0;
-                switch (d)
-                {
-                case 0:
-                    previousDirection = (previousDirection == 45) ? 315 : 45;
-                    break;
-                case 1:
-                    previousDirection = (previousDirection == 315) ? 225 : 315;
-                    break;
-                case 2:
-                    previousDirection = (previousDirection == 225) ? 135 : 225;
-                    break;
-                case 3:
-                    previousDirection = (previousDirection == 135) ? 45 : 135;
-                    break;
-                }
-            }
-            else
-            {
-                m_homeCounter++;
-            }
-        }
+          }else if(sensorValue-previous>10){
+            homeState++;
+            previousDirection=(360-d*90+90)%360;
+          }
+          break;
+        case 3: //recenters on flame
+          if(sensorValue-previous<-10){
+            homeState=2;
+            startLoc= (d==0||d==2)?getDisplacementY():getDisplacementX();
+          }else if(((d==0||d==2)?getDisplacementY():getDisplacementX())>startLoc+5){
+            previousDirection=previousDirection+180%360;
+            homeState++;
+          }
+          break;
+        case 4:
+          if(sensorValue-previous<-10){
+            homeState=2;
+            startLoc=(d==0||d==2)?getDisplacementY():getDisplacementX();
+          }
+          break;
     }
-    previous = sensorValue;
+
+    previous=sensorValue;
     drive(previousDirection);
     return false;
+    // static int previousDirection = ((d == 0) ? ((m_navigationCurrentDir == 1) ? 45 : 315) :
+    //                                 ((d == 1) ? ((m_navigationCurrentDir == 1) ? 315 : 225) :
+    //                                  ((d == 2) ? ((m_navigationCurrentDir == 1) ? 225 : 135) :
+    //                                   ((d == 3) ? ((m_navigationCurrentDir == 1) ? 135 : 45) : 0))));
+    // static int previous = ((d == 0) ? m_rangeNorth.distance() :
+    //                        ((d == 1) ? m_rangeWest.distance() :
+    //                         ((d == 2) ? m_rangeSouth.distance() : m_rangeEast.distance())));
+    // static int switched = 0;
+    // static int lastD = 0;
+    // int sensorValue;
+
+    // if (switched == 0 && d == -1)
+    // {
+    //     switch (d)
+    //     {
+    //     case 0:
+    //         previousDirection = (previousDirection == 45) ? 315 : 45;
+    //         break;
+    //     case 1:
+    //         previousDirection = (previousDirection == 315) ? 225 : 315;
+    //         break;
+    //     case 2:
+    //         previousDirection = (previousDirection == 225) ? 135 : 225;
+    //         break;
+    //     case 3:
+    //         previousDirection = (previousDirection == 135) ? 45 : 135;
+    //         break;
+    //     }
+    //     switched = 1;
+    // }
+    // else
+    // {
+    //     switched = 0;
+    //     lastD = d;
+    //     switch (d)
+    //     {
+    //     case 0://north
+    //         sensorValue = m_rangeNorth.distance();
+    //         break;
+    //     case 1: //west
+    //         sensorValue = m_rangeWest.distance();
+    //         break;
+    //     case 2: //south
+    //         sensorValue = m_rangeSouth.distance();
+    //         break;
+    //     case 3: //east
+    //         sensorValue = m_rangeEast.distance();
+    //         break;
+    //     }
+    //     if (sensorValue < 8)
+    //     {
+    //         stopDrive();
+    //         setFans(d + 1);
+    //         return true;
+    //     }
+    //     else
+    //     {
+    //         if (abs(sensorValue - previous) > 10)
+    //         {
+    //             Serial.println("switched");
+    //             m_homeCounter = 0;
+    //             switch (d)
+    //             {
+    //             case 0:
+    //                 previousDirection = (previousDirection == 45) ? 315 : 45;
+    //                 break;
+    //             case 1:
+    //                 previousDirection = (previousDirection == 315) ? 225 : 315;
+    //                 break;
+    //             case 2:
+    //                 previousDirection = (previousDirection == 225) ? 135 : 225;
+    //                 break;
+    //             case 3:
+    //                 previousDirection = (previousDirection == 135) ? 45 : 135;
+    //                 break;
+    //             }
+    //         }
+    //         else
+    //         {
+    //             m_homeCounter++;
+    //         }
+    //     }
+    // }
+    // previous = sensorValue;
+    // drive(previousDirection);
+    // return false;
 }
 
 float getDisplacementX()
