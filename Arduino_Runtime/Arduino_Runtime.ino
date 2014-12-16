@@ -35,6 +35,7 @@ FlameSensor       m_flameEast(kFlameSensorEast);
 int               m_randomSeed = 0;
 int               printCounter = 0;
 int               m_homeCounter = 0;
+
 void setup()
 {
     Serial.begin(115200);
@@ -317,6 +318,8 @@ void navigate()
                 }
             }
             changeNavState(kNavigationFollowWall);
+            m_navStack.push((FollowCommand){m_navigationCurrentWall, 
+                            ((m_navigationCurrentDir == 1) ? 0 : 1)});
             break;
         case kNavigationHomeOnCandle:
             if (homeOnCandle(candleSide))
@@ -341,11 +344,32 @@ void navigate()
                 Serial.println("flex");
                 writeDisplacement(candleSide);
                 changeNavState(kNavigationFlameExtinguished);
+                FollowCommand _cmd = m_navStack.pop();
+                m_navigationCurrentWall = _cmd.side;
+                m_navigationCurrentDir  = _cmd.direction;
             } else if (candleSide != -1) {
                 printCounter = 0;
             } else { printCounter++; }
             break;
-        case kNavigationFlameExtinguished:
+        case kNavigationFlameExtinguished: //playback moves
+            if (abs(getDisplacementX()) < 6.0 && abs(getDisplacementY()) < 6.0)
+            {
+                changeNavState(kNavigationDone);
+            }
+            else if (followWall(m_navigationCurrentWall, m_navigationCurrentDir))
+            {
+                if (!m_navStack.isEmpty())
+                {
+                    FollowCommand _cmd = m_navStack.pop();
+                    m_navigationCurrentWall = _cmd.side;
+                    m_navigationCurrentDir  = _cmd.direction;
+                } else {
+                    changeNavState(kNavigationDone);
+                }
+            }
+            break;
+        case kNavigationDone:
+            stopDrive();
             setFans(0);
             break;
         }

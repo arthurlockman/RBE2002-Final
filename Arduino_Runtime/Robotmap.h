@@ -68,7 +68,8 @@ enum NavigationState
     kNavigationHomeOnCandle,
     kNavigtationApproachCandle,
     kNavigationExtinguishFlame,
-    kNavigationFlameExtinguished
+    kNavigationFlameExtinguished,
+    kNavigationDone
 };
 
 struct FollowCommand
