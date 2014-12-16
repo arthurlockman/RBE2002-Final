@@ -154,9 +154,8 @@ void loop()
         }
     }
     printDebuggingMessages();
-    Serial.println(getFlameHeight(0));
-    //updateDrive();
-    //navigate();
+    updateDrive();
+    navigate();
 }
 
 void enable()
