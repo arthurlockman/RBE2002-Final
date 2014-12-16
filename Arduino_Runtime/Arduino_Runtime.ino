@@ -735,11 +735,11 @@ void drive(int degreesFromNorth)
     int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
     int motorSpeedEastWest = calcMotorSpeedEastWest(driveSpeed);
 
-    //Set directions for encoders
-    if (motorSpeedNorthSouth < 90) southDirection = 1;
-    else southDirection = 0;
-    if (motorSpeedEastWest < 90) eastDirection = 0;
-    else eastDirection = 1;
+    // //Set directions for encoders
+    // if (motorSpeedNorthSouth < 90) southDirection = 1;
+    // else southDirection = 0;
+    // if (motorSpeedEastWest < 90) eastDirection = 0;
+    // else eastDirection = 1;
 
     northSetpoint = motorSpeedNorthSouth;
     westSetpoint  = motorSpeedEastWest;
@@ -794,6 +794,13 @@ void updateDrive()
     int westSetpointAdj  = westSetpoint - (int)(headingError * kCompassCorrectionP);
     int southSetpointAdj = southSetpoint - (int)(headingError * kCompassCorrectionP);
     int eastSetpointAdj  = eastSetpoint + (int)(headingError * kCompassCorrectionP);
+    
+    //Set directions for encoders
+    if (northSetpointAdj < 90) southDirection = 1;
+    else southDirection = 0;
+    if (westSetpointAdj < 90) eastDirection = 0;
+    else eastDirection = 1;
+
     if (!m_stopped)
     {
         m_north.write(180 - ((northSetpointAdj < 0) ? northSetpointAdj + 180 : northSetpointAdj));
