@@ -1187,22 +1187,22 @@ int candleVisible()
     float westDist = m_flameWest.distance();
     float southDist = m_flameSouth.distance();
     float eastDist = m_flameEast.distance();
-    if (northDist > 0.0 && northDist < minimum && northDist < 18.0)
+    if (northDist > 0.0 && northDist < minimum && northDist < 14.0)
     {
         minimum = northDist;
         minimumSide = 0;
     }
-    if (westDist > 0.0 && westDist < minimum && westDist < 18.0)
+    if (westDist > 0.0 && westDist < minimum && westDist < 14.0)
     {
         minimum = westDist;
         minimumSide = 1;
     }
-    if (southDist > 0.0 && southDist < minimum && southDist < 18.0)
+    if (southDist > 0.0 && southDist < minimum && southDist < 14.0)
     {
         minimum = southDist;
         minimumSide = 2;
     }
-    if (eastDist > 0.0 && eastDist < minimum && eastDist < 18.0)
+    if (eastDist > 0.0 && eastDist < minimum && eastDist < 14.0)
     {
         minimum = eastDist;
         minimumSide = 3;
