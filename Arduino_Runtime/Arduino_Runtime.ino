@@ -154,8 +154,9 @@ void loop()
         }
     }
     printDebuggingMessages();
-    updateDrive();
-    navigate();
+    Serial.println(getFlameHeight(0));
+    //updateDrive();
+    //navigate();
 }
 
 void enable()
@@ -1514,13 +1515,12 @@ float getFlameHeight(int d){
           sensorVal=m_flameEast.read();
           break;
     }
-    float calibratedValue=11+(-.0002*pow(sensorVal,3)+.0156*pow(sensorVal,2)-.424*sensorVal+2.386);
-    if(calibratedValue>11){
+    if(calibratedValue<20){
         calibratedValue=11;
-    }else if(calibratedValue<7.5){
-        calibratedValue=7.5;
+    }else if(calibratedValue<30){
+        calibratedValue=9.5;
     }else{
-        calibrated = 9.5;
+        calibratedValue = 7.5;
     }
     return calibratedValue;
 }
