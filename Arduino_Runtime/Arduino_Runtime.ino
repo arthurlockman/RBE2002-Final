@@ -54,6 +54,10 @@ void setup()
     pinMode(kFanSouth, OUTPUT);
     pinMode(kFanEast, OUTPUT);
     setFans(0);
+    northStartDist = m_rangeNorth.distance();
+    westStartDist = m_rangeWest.distance();
+    southStartDist = m_rangeSouth.distance();
+    eastStartDist = m_rangeEast.distance();
 }
 
 void loop()
@@ -730,7 +734,7 @@ void drive(int degreesFromNorth)
     m_stopped = false;
 #if defined(DRIVE_PID)
     //Do PID Drive
-    currentHeading = degreesFromNorth;
+    currentHeading = degreesFromNorth%360;
 
     int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
     int motorSpeedEastWest = calcMotorSpeedEastWest(driveSpeed);
@@ -1455,3 +1459,109 @@ bool driveDistance(int dir, float distance)
     }
 }
 
+void correctOrientation(){
+    northSetpoint=0;
+    westSetpoint=0;
+    southSetpoint=0;
+    eastSetpoint=0;
+    m_stopped=false;
+}
+
+bool reZeroRobot(){
+    static int zeroState=1;
+    static float lowestDist;
+    static float lowestAng;
+    static float startingAng;
+    static Ultrasonic readSensor;
+
+    switch (zeroState) {
+        case 1://sets up variables
+            lowestDist=1000;
+            lowestAng =0;
+            startingAng=startOrientation;
+            startOrientation+=30;
+            readSensor = m_rangeNorth;
+            if(readSensor.distance()>m_rangeWest.distance()){
+                readSensor = m_rangeWest;
+            }
+            if(readSensor.distance()>m_rangeSouth.distance()){
+                readSensor = m_rangeSouth;
+            }
+            if(readSensor.distance()>m_rangeEast.distance()){
+                readSensor = m_rangeEast;
+            }
+            zeroState++;
+            break;
+        case 2://pans clockwise
+            if(readSensor.distance()<lowestDist){
+                lowestDist=readSensor.distance();
+                lowestAng=imuRotation;
+            }
+            if(imuRotation>25+startingAng){
+                startOrientation=startingAng-30;
+                zeroState++;
+            }
+          break;
+        case 3://pans counterclockwise
+            if(readSensor.distance()<lowestDist){
+                lowestDist=readSensor.distance();
+                lowestAng=imuRotation;
+            }
+            if(imuRotation<25+startingAng){
+                zeroState++;
+            }
+          break;
+        case 4://writes new orientation
+            startOrientation = lowestAng
+            correctOrientation();
+            zeroState++;
+        case 5:
+            if(abs(imuRotation-startOrientation)<5){
+                zeroState=1;
+                stopDrive();
+                return true;
+            }
+            break;
+    }
+    correctOrientation()
+    return false;
+}
+
+bool getEndValues(int d){
+    static int state=1;
+    static int leftEdge = 0;
+    static int rightEdge =0;
+    static float candleDist=0;
+    static float candleWallDist=0;
+    static float candleOppositeWallDist=0;
+    static float previous = ((d == 0) ? m_rangeNorth.distance() :
+                           ((d == 1) ? m_rangeWest.distance() :
+                            ((d == 2) ? m_rangeSouth.distance() : m_rangeEast.distance())));
+
+    static float strafeSensor = ((d == 0) ? ((m_rangeEast.distance()<m_rangeWest.distance())?m_rangeEast:m_rangeWest) :
+                           ((d == 1) ? ((m_rangeSouth.distance()<m_rangeNorth.distance())?m_rangeSouth:m_rangeNorth)  :
+                            ((d == 2) ? ((m_rangeEast.distance()<m_rangeWest.distance())?m_rangeEast:m_rangeWest)  :
+                                ((m_rangeSouth.distance()<m_rangeNorth.distance())?m_rangeSouth:m_rangeNorth)));
+    static float startDist = strafeSensor.distance();
+    float candleSensorVal = ((d == 0) ? m_rangeNorth.distance() :
+                           ((d == 1) ? m_rangeWest.distance() :
+                            ((d == 2) ? m_rangeSouth.distance() : m_rangeEast.distance())));
+
+    switch (state) {
+        case 1:
+            if (candleSensorVal<8.5){
+                drive(360-d*90 +180);
+            }else{
+                stopDrive()
+                candleDist=candleSensorValue;
+                candleOppositeWallDist = 
+                state++;
+            }
+          break;
+        case 2:
+            if(candleSensorVal)
+          break;
+        default:
+          // do something
+    }
+}
