@@ -1334,6 +1334,64 @@ float getDisplacementY()
     return ((-m_encoderNorth.distance()) + (-m_encoderSouth.distance())) / 2.0;
 }
 
+bool driveDistanceUltrasonic(int dir, float distance)
+{
+    static float initialDist = (dir == 1) ? m_rangeSouth.distance() : (dir == 2) ? 
+                                m_rangeEast.distance() : (dir == 3) ? 
+                                m_rangeNorth.distance() : m_rangeWest.distance();
+    switch (dir)
+    {
+    case 1:
+        if (abs(m_rangeSouth.distance() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        }
+        else
+        {
+            drive(0);
+            return false;
+        }
+        break;
+    case 2:
+        if (abs(m_rangeEast.distance() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        }
+        else
+        {
+            drive(270);
+            return false;
+        }
+        break;
+    case 3:
+        if (abs(m_rangeNorth.distance() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        }
+        else
+        {
+            drive(180);
+            return false;
+        }
+        break;
+    case 4:
+        if (abs(m_rangeWest.distance() - initialDist) >= distance)
+        {
+            stopDrive();
+            return true;
+        }
+        else
+        {
+            drive(90);
+            return false;
+        }
+        break;
+    }
+}
+
 bool driveDistance(int dir, float distance)
 {
     static float initialDist = (dir == 1 || dir == 3) ? getDisplacementX() : getDisplacementY();
