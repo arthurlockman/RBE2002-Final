@@ -1175,13 +1175,13 @@ int getLargestFrontierLeftRight(int currentSide)
 float getFlameHeading()
 {
     float noDist = m_flameNorth.distance();
-    noDist = (noDist == -1 || noDist == -2) ? 0 : noDist;
+    noDist = (noDist == -1 || noDist == -2 || noDist > 18.0) ? 0 : noDist;
     float weDist = m_flameWest.distance();
-    weDist = (weDist == -1 || weDist == -2) ? 0 : weDist;
+    weDist = (weDist == -1 || weDist == -2 || weDist > 18.0) ? 0 : weDist;
     float soDist = m_flameSouth.distance();
-    soDist = (soDist == -1 || soDist == -2) ? 0 : soDist;
+    soDist = (soDist == -1 || soDist == -2 || soDist > 18.0) ? 0 : soDist;
     float eaDist = m_flameEast.distance();
-    eaDist = (eaDist == -1 || eaDist == -2) ? 0 : eaDist;
+    eaDist = (eaDist == -1 || eaDist == -2 || eaDist > 18.0) ? 0 : eaDist;
     float noBias = (eaDist >= weDist) ? 90.0 : 450.0;
 
     float numerator = (noBias * noDist) + (180.0 * eaDist) +
