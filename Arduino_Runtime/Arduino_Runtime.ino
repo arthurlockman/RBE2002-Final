@@ -1,4 +1,4 @@
- #include "Robotmap.h"
+#include "Robotmap.h"
 
 // #define DEBUG //Comment out to disable debug messages.
 // #define TESTING //Comment out to disable testing.
@@ -139,7 +139,7 @@ void loop()
         {
             m_navigate = true;
             m_navigationState = kNavigationStart;
-            Serial.println("got nav command");
+            // Serial.println("got nav command");
         }
         else if (command.substring(0, 3) == "imu")
         {
@@ -182,9 +182,9 @@ void navigate()
         switch (m_navigationState)
         {
         case kNavigationStart:
-            m_navigationCurrentWall = getSmallestFrontier();
+            m_navigationCurrentWall = 4;
             Serial.println(m_navigationCurrentWall);
-            m_navigationCurrentDir  = getLargestFrontierLeftRight(m_navigationCurrentWall);
+            m_navigationCurrentDir  = 0;
             Serial.println(m_navigationCurrentDir);
             changeNavState(kNavigationFollowWall);
             break;
@@ -327,18 +327,23 @@ void navigate()
             }
             break;
         case kNavigtationApproachCandle:
-            changeNavState(kNavigationExtinguishFlame);
-            writeDisplacement(candleSide);
-            stopDrive();
+            if (driveDistance((candleSide + 1), 4.0))
+            {
+                changeNavState(kNavigationExtinguishFlame);
+                writeDisplacement(candleSide);
+                stopDrive();
+            }
             break;
         case kNavigationExtinguishFlame:
             stopDrive();
-            if (candleSide == -1)
+            if (candleSide == -1 && printCounter == 2000)
             {
                 Serial.println("flex");
                 writeDisplacement(candleSide);
                 changeNavState(kNavigationFlameExtinguished);
-            }
+            } else if (candleSide != -1) {
+                printCounter = 0;
+            } else { printCounter++; }
             break;
         case kNavigationFlameExtinguished:
             setFans(0);
@@ -354,16 +359,16 @@ void writeDisplacement(int candleSide)
     switch (candleSide)
     {
     case 0:
-        dispx += 6.0;
+        dispx += 9.0;
         break;
     case 1:
-        dispy += 6.0;
+        dispy += 9.0;
         break;
     case 2:
-        dispx -= 6.0;
+        dispx -= 9.0;
         break;
     case 3:
-        dispy -= 6.0;
+        dispy -= 9.0;
         break;
     }
     String out;
@@ -989,7 +994,7 @@ void periodicUpdate()
 void lockRotation()
 {
     startOrientation = imuRotation;
-    Serial.println(startOrientation);
+    // Serial.println(startOrientation);
 }
 
 int getLargestFrontier()
@@ -1021,24 +1026,60 @@ int getLargestFrontierLeftRight(int currentSide)
         switch (currentSide)
         {
         case 1: //north
-            if (m_navigationCurrentWall == 2) { return 1; }
-            else if (m_navigationCurrentWall == 4) { return 0; }
-            else { return greatestIndex(2.0, eastDist, westDist); }
+            if (m_navigationCurrentWall == 2)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 4)
+            {
+                return 0;
+            }
+            else
+            {
+                return greatestIndex(2.0, eastDist, westDist);
+            }
             break;
         case 2: //west
-            if (m_navigationCurrentWall == 3) { return 1; }
-            else if (m_navigationCurrentWall == 1) { return 0; }
-            else { return greatestIndex(2.0, northDist, southDist); }
+            if (m_navigationCurrentWall == 3)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 1)
+            {
+                return 0;
+            }
+            else
+            {
+                return greatestIndex(2.0, northDist, southDist);
+            }
             break;
         case 3: //south
-            if (m_navigationCurrentWall == 4) { return 1; }
-            else if (m_navigationCurrentWall == 2) { return 0; }
-            else { return greatestIndex(2.0, westDist, eastDist); }
+            if (m_navigationCurrentWall == 4)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 2)
+            {
+                return 0;
+            }
+            else
+            {
+                return greatestIndex(2.0, westDist, eastDist);
+            }
             break;
         case 4: //east
-            if (m_navigationCurrentWall == 1) { return 1; }
-            else if (m_navigationCurrentWall == 3) { return 0; }
-            else { return greatestIndex(2.0, northDist, southDist); }
+            if (m_navigationCurrentWall == 1)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 3)
+            {
+                return 0;
+            }
+            else
+            {
+                return greatestIndex(2.0, northDist, southDist);
+            }
             break;
         default:
             return 1;
@@ -1046,24 +1087,68 @@ int getLargestFrontierLeftRight(int currentSide)
     }
     else
     {
+        Serial.println("On wall.");
+        Serial.println(m_navigationCurrentWall);
+        Serial.println(m_navigationCurrentDir);
+        Serial.println(currentSide);
         // return random(0, 2);
         switch (currentSide)
         {
         case 1:
-            if (m_navigationCurrentWall == 4) { return 1; }
-            else if (m_navigationCurrentWall == 2) { return 0; }
+            if (m_navigationCurrentWall == 4)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 2)
+            {
+                return 0;
+            } 
+            else if (m_navigationCurrentWall == 1)
+            {
+                return 1;
+            }
             break;
         case 2:
-            if (m_navigationCurrentWall == 1) { return 1; }
-            else if (m_navigationCurrentWall == 3) { return 0; }
+            if (m_navigationCurrentWall == 1)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 3)
+            {
+                return 0;
+            }
+            else if (m_navigationCurrentWall == 2)
+            {
+                return 1;
+            }
             break;
         case 3:
-            if (m_navigationCurrentWall == 2) { return 1; }
-            else if (m_navigationCurrentWall == 3) { return 0; }
+            if (m_navigationCurrentWall == 2)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 4)
+            {
+                return 0;
+            }
+            else if (m_navigationCurrentWall == 3)
+            {
+                return 1;
+            }
             break;
         case 4:
-            if (m_navigationCurrentWall == 3) { return 1; }
-            else if (m_navigationCurrentWall == 1) { return 0; }
+            if (m_navigationCurrentWall == 3)
+            {
+                return 1;
+            }
+            else if (m_navigationCurrentWall == 1)
+            {
+                return 0;
+            }
+            else if (m_navigationCurrentWall == 4)
+            {
+                return 1;
+            }
             break;
         default:
             return 1;
@@ -1102,22 +1187,22 @@ int candleVisible()
     float westDist = m_flameWest.distance();
     float southDist = m_flameSouth.distance();
     float eastDist = m_flameEast.distance();
-    if (northDist > 0.0 && northDist < minimum && northDist < 48.0)
+    if (northDist > 0.0 && northDist < minimum && northDist < 18.0)
     {
         minimum = northDist;
         minimumSide = 0;
     }
-    if (westDist > 0.0 && westDist < minimum && westDist < 48.0)
+    if (westDist > 0.0 && westDist < minimum && westDist < 18.0)
     {
         minimum = westDist;
         minimumSide = 1;
     }
-    if (southDist > 0.0 && southDist < minimum && southDist < 48.0)
+    if (southDist > 0.0 && southDist < minimum && southDist < 18.0)
     {
         minimum = southDist;
         minimumSide = 2;
     }
-    if (eastDist > 0.0 && eastDist < minimum && eastDist < 48.0)
+    if (eastDist > 0.0 && eastDist < minimum && eastDist < 18.0)
     {
         minimum = eastDist;
         minimumSide = 3;
@@ -1127,17 +1212,42 @@ int candleVisible()
 
 bool homeOnCandle(int d)
 {
-    static int initialD = d;
-    int oldD = (d == -1) ? initialD : d;
-    static int previousDirection = ((oldD == 0) ? ((m_navigationCurrentDir == 1) ? 45 : 315) :
-                                    ((oldD == 1) ? ((m_navigationCurrentDir == 1) ? 315 : 225) : 
-                                    ((oldD == 2) ? ((m_navigationCurrentDir == 1) ? 225 : 135) :
-                                    ((oldD == 3) ? ((m_navigationCurrentDir == 1) ? 135 : 45) : 0))));
-    static int previous = ((oldD==0)?m_rangeNorth.distance():
-                            ((oldD==1)?m_rangeWest.distance():
-                            ((oldD==2)?m_rangeSouth.distance(): m_rangeEast.distance())));
+    static int previousDirection = ((d == 0) ? ((m_navigationCurrentDir == 1) ? 45 : 315) :
+                                    ((d == 1) ? ((m_navigationCurrentDir == 1) ? 315 : 225) :
+                                     ((d == 2) ? ((m_navigationCurrentDir == 1) ? 225 : 135) :
+                                      ((d == 3) ? ((m_navigationCurrentDir == 1) ? 135 : 45) : 0))));
+    static int previous = ((d == 0) ? m_rangeNorth.distance() :
+                           ((d == 1) ? m_rangeWest.distance() :
+                            ((d == 2) ? m_rangeSouth.distance() : m_rangeEast.distance())));
+    static int switched = 0;
+    static int lastD = 0;
     int sensorValue;
-    switch(oldD){
+
+    if (switched == 0 && d == -1)
+    {
+        switch (d)
+        {
+        case 0:
+            previousDirection = (previousDirection == 45) ? 315 : 45;
+            break;
+        case 1:
+            previousDirection = (previousDirection == 315) ? 225 : 315;
+            break;
+        case 2:
+            previousDirection = (previousDirection == 225) ? 135 : 225;
+            break;
+        case 3:
+            previousDirection = (previousDirection == 135) ? 45 : 135;
+            break;
+        }
+        switched = 1;
+    }
+    else
+    {
+        switched = 0;
+        lastD = d;
+        switch (d)
+        {
         case 0://north
             sensorValue = m_rangeNorth.distance();
             break;
@@ -1150,35 +1260,42 @@ bool homeOnCandle(int d)
         case 3: //east
             sensorValue = m_rangeEast.distance();
             break;
-    }
-    Serial.print(sensorValue);
-    Serial.print('\t');
-    Serial.println(previous);
-    if(sensorValue<8){
-        stopDrive();
-        setFans(d+1);
-        return true;
-    } else{
-        if((abs(sensorValue-previous) > 10) || (d = -1 && m_homeCounter == 200)){
-            Serial.println("switched");
-            switch (d)
+        }
+        if (sensorValue < 8)
+        {
+            stopDrive();
+            setFans(d + 1);
+            return true;
+        }
+        else
+        {
+            if (abs(sensorValue - previous) > 10)
             {
-            case 0:
-                previousDirection = (previousDirection == 45) ? 315 : 45;
-                break;
-            case 1:
-                previousDirection = (previousDirection == 315) ? 225 : 315;
-                break;
-            case 2:
-                previousDirection = (previousDirection == 225) ? 135 : 225;
-                break;
-            case 3:
-                previousDirection = (previousDirection == 135) ? 45 : 135;
-                break;
+                Serial.println("switched");
+                m_homeCounter = 0;
+                switch (d)
+                {
+                case 0:
+                    previousDirection = (previousDirection == 45) ? 315 : 45;
+                    break;
+                case 1:
+                    previousDirection = (previousDirection == 315) ? 225 : 315;
+                    break;
+                case 2:
+                    previousDirection = (previousDirection == 225) ? 135 : 225;
+                    break;
+                case 3:
+                    previousDirection = (previousDirection == 135) ? 45 : 135;
+                    break;
+                }
             }
-        } else { m_homeCounter++; }
+            else
+            {
+                m_homeCounter++;
+            }
+        }
     }
-    previous=sensorValue;
+    previous = sensorValue;
     drive(previousDirection);
     return false;
 }
