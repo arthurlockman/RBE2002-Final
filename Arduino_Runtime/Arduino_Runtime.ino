@@ -344,7 +344,6 @@ void navigate()
                 changeNavState(kNavigationExtinguishFlame);
                 writeDisplacement(candleSide);
                 writeDisplacement(candleSide);
-                writeDisplacement(candleSide);
                 stopDrive();
             }
             break;

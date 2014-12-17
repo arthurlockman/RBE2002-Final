@@ -7,6 +7,11 @@ var SerialPort = require("serialport").SerialPort;
 var serialPort = new SerialPort("/dev/ttyACM0", {
       baudrate: 115200
 });
+serialPort.on('error', function(data)
+{
+    console.log("couldn't connect to arduino");
+});
+var nodemailer = require('nodemailer');
 var moment = require('moment');
 // var random = require("node-random");
 
@@ -38,6 +43,14 @@ imuprocess.stdout.on('data', function(data) {
     }
 })
 
+var transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+        user: 'rbe@rthr.me',
+        pass: 'hoorayrobots1'
+    }
+});
+
 serialPort.on("open", function() {
     console.log("port open");
     serialConnected = true;
@@ -63,6 +76,24 @@ function processSerialIncoming(element, index, array) {
             io.emit('dx', element.substring(3).split(',')[0]);
             io.emit('dy', element.substring(2).split(',')[1]);
             io.emit('dz', element.substring(2).split(',')[2]);
+            var dx = element.substring(3).split(',')[0];
+            var dy = element.substring(2).split(',')[1];
+            var dz = element.substring(2).split(',')[2];
+            var mailOptions = {
+                from: 'The Last Airbender <rbe@rthr.me>', // sender address
+                to: 'ajlockman@wpi.edu, tchaydon@wpi.edu, ltutt@wpi.edu', // list of receivers
+                subject: 'Found flame ✔', // Subject line
+                text: 'Hi there!\n\nI found a flame at (' + dx + 'in, ' + dy + 'in, ' + dz + 'in). Just thought you would like to know!\n\n-The Last Airbender', // plaintext body
+                html: '<p>Hi there!</p><p>I found a flame at <b>(' + dx + 'in, ' + dy + 'in, ' + dz + 'in)</b>. Just thought you would like to know!<p>-The Last Airbender</p>' // html body
+            };
+
+            transporter.sendMail(mailOptions, function(error, info){
+                if(error) {
+                    console.log(error);
+                } else {
+                    console.log('Message sent: ' + info.response);
+                }
+            });
         } else {
             console.log(element);
         }
