@@ -35,6 +35,7 @@ FlameSensor       m_flameEast(kFlameSensorEast);
 int               m_randomSeed = 0;
 int               printCounter = 0;
 int               m_homeCounter = 0;
+bool              m_homedShort = false;
 
 void setup()
 {
@@ -333,7 +334,9 @@ void navigate()
             }
             break;
         case kNavigtationApproachCandle:
-            if (driveDistance((candleSide + 1), 4.0))
+            Serial.println("Approaching candle");
+            Serial.println((candleSide + 1));
+            if (m_homedShort || driveDistance((candleSide + 1), 300))
             {
                 changeNavState(kNavigationExtinguishFlame);
                 writeDisplacement(candleSide);
@@ -346,7 +349,7 @@ void navigate()
             {
                 Serial.println("flex");
                 writeDisplacement(candleSide);
-                changeNavState(kNavigationFlameExtinguished);
+                changeNavState(kNavigationReturnToWall);
                 FollowCommand _cmd = m_navStack.pop();
                 m_navigationCurrentWall = _cmd.side;
                 m_navigationCurrentDir  = _cmd.direction;
@@ -354,7 +357,13 @@ void navigate()
                 printCounter = 0;
             } else { printCounter++; }
             break;
-        case kNavigationFlameExtinguished: //playback moves
+        case kNavigationReturnToWall:
+            if (returnToWall(m_navigationCurrentWall))
+            {
+                changeNavState(kNavigationReturnHome);
+            }
+            break;
+        case kNavigationReturnHome: //playback moves
             if (abs(getDisplacementX()) < 6.0 && abs(getDisplacementY()) < 6.0)
             {
                 changeNavState(kNavigationDone);
@@ -368,6 +377,7 @@ void navigate()
                     m_navigationCurrentDir  = _cmd.direction;
                 } else {
                     changeNavState(kNavigationDone);
+                    disable();
                 }
             }
             break;
@@ -377,6 +387,46 @@ void navigate()
             break;
         }
     }
+}
+
+bool returnToWall(int wall)
+{
+    switch (wall)
+    {
+    case 1:
+        if (m_rangeNorth.distance() < 8.0)
+        {
+            stopDrive();
+            return true;
+        }
+        drive(0);
+        break;
+    case 2:
+        if (m_rangeWest.distance() < 8.0)
+        {
+            stopDrive();
+            return true;
+        }
+        drive(270);
+        break;
+    case 3:
+        if (m_rangeSouth.distance() < 8.0)
+        {
+            stopDrive();
+            return true;
+        }
+        drive(180);
+        break;
+    case 4:
+        if (m_rangeEast.distance() < 8.0)
+        {
+            stopDrive();
+            return true;
+        }
+        drive(90);
+        break;
+    }
+    return false;
 }
 
 void writeDisplacement(int candleSide)
@@ -1195,27 +1245,27 @@ float getFlameHeading()
 int candleVisible()
 {
     int minimumSide = -1;
-    int minimum = 4000;
+    int minimum = 4000; 
     float northDist = m_flameNorth.distance();
     float westDist = m_flameWest.distance();
     float southDist = m_flameSouth.distance();
     float eastDist = m_flameEast.distance();
-    if (northDist > 0.0 && northDist < minimum && northDist < 18.0)
+    if (northDist > 0.0 && northDist < minimum && northDist < 24.0)
     {
         minimum = northDist;
         minimumSide = 0;
     }
-    if (westDist > 0.0 && westDist < minimum && westDist < 18.0)
+    if (westDist > 0.0 && westDist < minimum && westDist < 24.0)
     {
         minimum = westDist;
         minimumSide = 1;
     }
-    if (southDist > 0.0 && southDist < minimum && southDist < 18.0)
+    if (southDist > 0.0 && southDist < minimum && southDist < 24.0)
     {
         minimum = southDist;
         minimumSide = 2;
     }
-    if (eastDist > 0.0 && eastDist < minimum && eastDist < 18.0)
+    if (eastDist > 0.0 && eastDist < minimum && eastDist < 24.0)
     {
         minimum = eastDist;
         minimumSide = 3;
@@ -1250,6 +1300,8 @@ bool homeOnCandle(int d)
     static float highVal=candleSensor->distance();
     static float previous= candleSensor->distance();
     float sensorValue=candleSensor->distance();
+    static bool startedShort = (sensorValue < 8.0) ? true : false;
+    m_homedShort = startedShort;
     switch (homeState) {
         case 1://finds candle
           if(sensorValue-highVal<-5){
@@ -1444,60 +1496,85 @@ bool driveDistanceUltrasonic(int dir, float distance)
     }
 }
 
-bool driveDistance(int dir, float distance)
+bool driveDistance(int dir, int dTime)
 {
-    static float initialDist = (dir == 1 || dir == 3) ? getDisplacementX() : getDisplacementY();
-    switch (dir)
+    static long initialTime = millis();
+    static int initialDir = dir;
+    if (millis() - initialTime > dTime)
     {
-    case 1: //north
-        if (abs(getDisplacementX() - initialDist) >= distance)
+        stopDrive();
+        return true;
+    } else 
+    {
+        switch (initialDir)
         {
-            stopDrive();
-            return true;
-        }
-        else
-        {
+        case 1:
             drive(0);
-            return false;
-        }
-        break;
-    case 2: //west
-        if (abs(getDisplacementY() - initialDist) >= distance)
-        {
-            stopDrive();
-            return true;
-        }
-        else
-        {
+            break;
+        case 2:
             drive(270);
-            return false;
-        }
-        break;
-    case 3: //south
-        if (abs(getDisplacementX() - initialDist) >= distance)
-        {
-            stopDrive();
-            return true;
-        }
-        else
-        {
+            break;
+        case 3:
             drive(180);
-            return false;
-        }
-        break;
-    case 4: //east
-        if (abs(getDisplacementY() - initialDist) >= distance)
-        {
-            stopDrive();
-            return true;
-        }
-        else
-        {
+            break;
+        case 4:
             drive(90);
-            return false;
+            break;
         }
-        break;
     }
+    return false;
+    // static float initialDist = (dir == 1 || dir == 3) ? getDisplacementX() : getDisplacementY();
+    // switch (dir)
+    // {
+    // case 1: //north
+    //     if (abs(getDisplacementX() - initialDist) >= distance)
+    //     {
+    //         stopDrive();
+    //         return true;
+    //     }
+    //     else
+    //     {
+    //         drive(0);
+    //         return false;
+    //     }
+    //     break;
+    // case 2: //west
+    //     if (abs(getDisplacementY() - initialDist) >= distance)
+    //     {
+    //         stopDrive();
+    //         return true;
+    //     }
+    //     else
+    //     {
+    //         drive(270);
+    //         return false;
+    //     }
+    //     break;
+    // case 3: //south
+    //     if (abs(getDisplacementX() - initialDist) >= distance)
+    //     {
+    //         stopDrive();
+    //         return true;
+    //     }
+    //     else
+    //     {
+    //         drive(180);
+    //         return false;
+    //     }
+    //     break;
+    // case 4: //east
+    //     if (abs(getDisplacementY() - initialDist) >= distance)
+    //     {
+    //         stopDrive();
+    //         return true;
+    //     }
+    //     else
+    //     {
+    //         drive(90);
+    //         return false;
+    //     }
+    //     break;
+    // }
 }
 
 float getFlameHeight(int d){
