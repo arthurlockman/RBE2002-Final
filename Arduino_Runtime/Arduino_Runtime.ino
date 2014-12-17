@@ -162,6 +162,10 @@ void loop()
 void enable()
 {
     printToConsole("Robot Enabled: ");
+    m_encoderNorth.write(0);
+    m_encoderWest.write(0);
+    m_encoderSouth.write(0);
+    m_encoderEast.write(0);
     enabled = true;
     lockRotation();
 }
@@ -184,9 +188,9 @@ void navigate()
         switch (m_navigationState)
         {
         case kNavigationStart:
-            m_navigationCurrentWall = 4;
+            m_navigationCurrentWall = (m_rangeEast.distance() < m_rangeWest.distance()) ? 4 : 2;
             Serial.println(m_navigationCurrentWall);
-            m_navigationCurrentDir  = 0;
+            m_navigationCurrentDir  = (m_navigationCurrentWall == 4) ? 0 : 1;
             Serial.println(m_navigationCurrentDir);
             changeNavState(kNavigationFollowWall);
             m_navStack.push((FollowCommand){m_navigationCurrentWall, 
@@ -203,7 +207,6 @@ void navigate()
             }
             break;
         case kNavigationDecideNext:
-            writeDisplacement(candleSide);
             Serial.println("finding next");
             if (!(m_lightNorth.read() || m_lightWest.read() || m_lightSouth.read() || m_lightEast.read()))
             {
@@ -340,6 +343,8 @@ void navigate()
             {
                 changeNavState(kNavigationExtinguishFlame);
                 writeDisplacement(candleSide);
+                writeDisplacement(candleSide);
+                writeDisplacement(candleSide);
                 stopDrive();
             }
             break;
@@ -348,7 +353,6 @@ void navigate()
             if (candleSide == -1 && printCounter == 4000)
             {
                 Serial.println("flex");
-                writeDisplacement(candleSide);
                 changeNavState(kNavigationReturnToWall);
                 FollowCommand _cmd = m_navStack.pop();
                 m_navigationCurrentWall = _cmd.side;
@@ -394,7 +398,7 @@ bool returnToWall(int wall)
     switch (wall)
     {
     case 1:
-        if (m_rangeNorth.distance() < 8.0)
+        if (m_rangeNorth.distance() < 8.0 || m_lightNorth.read())
         {
             stopDrive();
             return true;
@@ -402,7 +406,7 @@ bool returnToWall(int wall)
         drive(0);
         break;
     case 2:
-        if (m_rangeWest.distance() < 8.0)
+        if (m_rangeWest.distance() < 8.0 || m_lightWest.read())
         {
             stopDrive();
             return true;
@@ -410,7 +414,7 @@ bool returnToWall(int wall)
         drive(270);
         break;
     case 3:
-        if (m_rangeSouth.distance() < 8.0)
+        if (m_rangeSouth.distance() < 8.0 || m_lightSouth.read())
         {
             stopDrive();
             return true;
@@ -418,7 +422,7 @@ bool returnToWall(int wall)
         drive(180);
         break;
     case 4:
-        if (m_rangeEast.distance() < 8.0)
+        if (m_rangeEast.distance() < 8.0 || m_lightEast.read())
         {
             stopDrive();
             return true;
