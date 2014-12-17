@@ -82,9 +82,9 @@ function processSerialIncoming(element, index, array) {
             var mailOptions = {
                 from: 'The Last Airbender <rbe@rthr.me>', // sender address
                 to: 'ajlockman@wpi.edu, tchaydon@wpi.edu, ltutt@wpi.edu', // list of receivers
-                subject: 'Found flame ✔', // Subject line
-                text: 'Hi there!\n\nI found a flame at (' + dx + 'in, ' + dy + 'in, ' + dz + 'in). Just thought you would like to know!\n\n-The Last Airbender', // plaintext body
-                html: '<p>Hi there!</p><p>I found a flame at <b>(' + dx + 'in, ' + dy + 'in, ' + dz + 'in)</b>. Just thought you would like to know!<p>-The Last Airbender</p>' // html body
+                subject: 'Fire', // Subject line
+                text: 'Dear Sir/Madam,\n\nFire! Fire! Help me! Location ('+dx+'in, '+dy+'in, '+dz+'in)\n\nLooking forward to hearing from you!\n\nAll the best,\n\n-The Last Airbender', // plaintext body
+                html: '<p>Dear Sir/Madam,</p><p>Fire! Fire! Help me! <b>Location ('+dx+'in, '+dy+'in, '+dz+'in)</b>.</p><p>Looking forward to hearing from you!</p><p>All the best,</p><p>-The Last Airbender</p>' // html body
             };
 
             transporter.sendMail(mailOptions, function(error, info){

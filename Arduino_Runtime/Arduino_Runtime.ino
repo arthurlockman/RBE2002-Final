@@ -193,8 +193,11 @@ void navigate()
             m_navigationCurrentDir  = (m_navigationCurrentWall == 4) ? 0 : 1;
             Serial.println(m_navigationCurrentDir);
             changeNavState(kNavigationFollowWall);
-            m_navStack.push((FollowCommand){m_navigationCurrentWall, 
-                ((m_navigationCurrentDir == 1) ? 0 : 1)});
+            m_navStack.push((FollowCommand)
+            {
+                m_navigationCurrentWall,
+                ((m_navigationCurrentDir == 1) ? 0 : 1)
+            });
             break;
         case kNavigationFollowWall:
             if (candleSide != -1)
@@ -325,8 +328,11 @@ void navigate()
                 }
             }
             changeNavState(kNavigationFollowWall);
-            m_navStack.push((FollowCommand){m_navigationCurrentWall, 
-                            ((m_navigationCurrentDir == 1) ? 0 : 1)});
+            m_navStack.push((FollowCommand)
+            {
+                m_navigationCurrentWall,
+                ((m_navigationCurrentDir == 1) ? 0 : 1)
+            });
             break;
         case kNavigationHomeOnCandle:
             if (homeOnCandle(candleSide))
@@ -356,9 +362,15 @@ void navigate()
                 FollowCommand _cmd = m_navStack.pop();
                 m_navigationCurrentWall = _cmd.side;
                 m_navigationCurrentDir  = _cmd.direction;
-            } else if (candleSide != -1) {
+            }
+            else if (candleSide != -1)
+            {
                 printCounter = 0;
-            } else { printCounter++; }
+            }
+            else
+            {
+                printCounter++;
+            }
             break;
         case kNavigationReturnToWall:
             if (returnToWall(m_navigationCurrentWall))
@@ -378,7 +390,9 @@ void navigate()
                     FollowCommand _cmd = m_navStack.pop();
                     m_navigationCurrentWall = _cmd.side;
                     m_navigationCurrentDir  = _cmd.direction;
-                } else {
+                }
+                else
+                {
                     changeNavState(kNavigationDone);
                     disable();
                 }
@@ -856,7 +870,7 @@ void updateDrive()
     int westSetpointAdj  = westSetpoint - (int)(headingError * kCompassCorrectionP);
     int southSetpointAdj = southSetpoint - (int)(headingError * kCompassCorrectionP);
     int eastSetpointAdj  = eastSetpoint + (int)(headingError * kCompassCorrectionP);
-    
+
     //Set directions for encoders
     if (northSetpointAdj < 90) southDirection = 1;
     else southDirection = 0;
@@ -1168,7 +1182,7 @@ int getLargestFrontierLeftRight(int currentSide)
             else if (m_navigationCurrentWall == 2)
             {
                 return 0;
-            } 
+            }
             else if (m_navigationCurrentWall == 1)
             {
                 return 1;
@@ -1248,7 +1262,7 @@ float getFlameHeading()
 int candleVisible()
 {
     int minimumSide = -1;
-    int minimum = 4000; 
+    int minimum = 4000;
     float northDist = m_flameNorth.distance();
     float westDist = m_flameWest.distance();
     float southDist = m_flameSouth.distance();
@@ -1278,69 +1292,82 @@ int candleVisible()
 
 bool homeOnCandle(int d)
 {
-    static int previousd=d;
-    static int homeState=2;
-    static bool hasSeen=true;
-    static int previousDirection=((d == 0) ? (((m_navigationCurrentWall==3&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==4) ? 270 : 90) :
-                                    ((d == 1) ? (((m_navigationCurrentWall==4&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==1) ? 180 : 0) :
-                                     ((d == 2) ? (((m_navigationCurrentWall==1&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==2) ? 90 : 270) :
-                                      ((d == 3) ? (((m_navigationCurrentWall==2&&m_navigationCurrentDir == 1)||m_navigationCurrentWall==3) ? 0 : 180) : 0))));
-    if(d==-1){
-        d=previousd;
-        if(hasSeen){
-            previousDirection=(previousDirection+180)%360;
+    static int previousd = d;
+    static int homeState = 2;
+    static bool hasSeen = true;
+    static int previousDirection = ((d == 0) ? (((m_navigationCurrentWall == 3 && m_navigationCurrentDir == 1) || m_navigationCurrentWall == 4) ? 270 : 90) :
+                                    ((d == 1) ? (((m_navigationCurrentWall == 4 && m_navigationCurrentDir == 1) || m_navigationCurrentWall == 1) ? 180 : 0) :
+                                     ((d == 2) ? (((m_navigationCurrentWall == 1 && m_navigationCurrentDir == 1) || m_navigationCurrentWall == 2) ? 90 : 270) :
+                                      ((d == 3) ? (((m_navigationCurrentWall == 2 && m_navigationCurrentDir == 1) || m_navigationCurrentWall == 3) ? 0 : 180) : 0))));
+    if (d == -1)
+    {
+        d = previousd;
+        if (hasSeen)
+        {
+            previousDirection = (previousDirection + 180) % 360;
         }
-        hasSeen=false;
-    }else{
-        previousd=d;
-        hasSeen=true;
+        hasSeen = false;
     }
-    Ultrasonic *candleSensor = (d==0)?&m_rangeNorth:
-                                ((d==1)?&m_rangeWest:
-                                    ((d==2)?&m_rangeSouth:&m_rangeEast));
+    else
+    {
+        previousd = d;
+        hasSeen = true;
+    }
+    Ultrasonic *candleSensor = (d == 0) ? &m_rangeNorth :
+                               ((d == 1) ? &m_rangeWest :
+                                ((d == 2) ? &m_rangeSouth : &m_rangeEast));
 
     static float startLoc;
-    static float highVal=candleSensor->distance();
-    static float previous= candleSensor->distance();
-    float sensorValue=candleSensor->distance();
+    static float highVal = candleSensor->distance();
+    static float previous = candleSensor->distance();
+    float sensorValue = candleSensor->distance();
     static bool startedShort = (sensorValue < 8.0) ? true : false;
     m_homedShort = startedShort;
-    switch (homeState) {
-        case 1://finds candle
-          if(sensorValue-highVal<-5){
+    switch (homeState)
+    {
+    case 1://finds candle
+        if (sensorValue - highVal < -5)
+        {
             homeState++;
-            startLoc=(d==0||d==2)?getDisplacementY():getDisplacementX();
-          }
-          break;
-        case 2://starts driving towards candle
-          previousDirection=(360-d*90)%360;
-          if(sensorValue<8){
-            setFans(d+1);
+            startLoc = (d == 0 || d == 2) ? getDisplacementY() : getDisplacementX();
+        }
+        break;
+    case 2://starts driving towards candle
+        previousDirection = (360 - d * 90) % 360;
+        if (sensorValue < 8)
+        {
+            setFans(d + 1);
             return true;
-          }else if(sensorValue-previous>10){
+        }
+        else if (sensorValue - previous > 10)
+        {
             homeState++;
-            highVal=sensorValue;
-            previousDirection=(360-d*90+90)%360;
-          }
-          break;
-        case 3: //recenters on flame
-          if(sensorValue-highVal<-5){
-            homeState=2;
-            startLoc= (d==0||d==2)?getDisplacementX():getDisplacementY();
-          }else if(((d==0||d==2)?getDisplacementX():getDisplacementY())>startLoc+5){
-            previousDirection=previousDirection+180%360;
+            highVal = sensorValue;
+            previousDirection = (360 - d * 90 + 90) % 360;
+        }
+        break;
+    case 3: //recenters on flame
+        if (sensorValue - highVal < -5)
+        {
+            homeState = 2;
+            startLoc = (d == 0 || d == 2) ? getDisplacementX() : getDisplacementY();
+        }
+        else if (((d == 0 || d == 2) ? getDisplacementX() : getDisplacementY()) > startLoc + 5)
+        {
+            previousDirection = previousDirection + 180 % 360;
             homeState++;
-          }
-          break;
-        case 4:
-          if(sensorValue-highVal<-5){
-            homeState=2;
-            startLoc=(d==0||d==2)?getDisplacementX():getDisplacementY();
-          }
-          break;
+        }
+        break;
+    case 4:
+        if (sensorValue - highVal < -5)
+        {
+            homeState = 2;
+            startLoc = (d == 0 || d == 2) ? getDisplacementX() : getDisplacementY();
+        }
+        break;
     }
 
-    previous=sensorValue;
+    previous = sensorValue;
     drive(previousDirection);
     return false;
     // static int previousDirection = ((d == 0) ? ((m_navigationCurrentDir == 1) ? 45 : 315) :
@@ -1443,9 +1470,9 @@ float getDisplacementY()
 
 bool driveDistanceUltrasonic(int dir, float distance)
 {
-    static float initialDist = (dir == 1) ? m_rangeSouth.distance() : (dir == 2) ? 
-                                m_rangeEast.distance() : (dir == 3) ? 
-                                m_rangeNorth.distance() : m_rangeWest.distance();
+    static float initialDist = (dir == 1) ? m_rangeSouth.distance() : (dir == 2) ?
+                               m_rangeEast.distance() : (dir == 3) ?
+                               m_rangeNorth.distance() : m_rangeWest.distance();
     switch (dir)
     {
     case 1:
@@ -1507,7 +1534,8 @@ bool driveDistance(int dir, int dTime)
     {
         stopDrive();
         return true;
-    } else 
+    }
+    else
     {
         switch (initialDir)
         {
@@ -1580,27 +1608,34 @@ bool driveDistance(int dir, int dTime)
     // }
 }
 
-float getFlameHeight(int d){
+float getFlameHeight(int d)
+{
     float sensorVal;
-    switch (d) {
-        case 0:
-          sensorVal=m_flameNorth.read();
-          break;
-        case 1:
-          sensorVal=m_flameWest.read();
-          break;
-        case 2:
-          sensorVal=m_flameSouth.read();
-          break;
-        case 3:
-          sensorVal=m_flameEast.read();
-          break;
+    switch (d)
+    {
+    case 0:
+        sensorVal = m_flameNorth.read();
+        break;
+    case 1:
+        sensorVal = m_flameWest.read();
+        break;
+    case 2:
+        sensorVal = m_flameSouth.read();
+        break;
+    case 3:
+        sensorVal = m_flameEast.read();
+        break;
     }
-    if(sensorVal<20){
+    if (sensorVal < 20)
+    {
         sensorVal = 11;
-    }else if(sensorVal<30){
+    }
+    else if (sensorVal < 30)
+    {
         sensorVal = 9.5;
-    }else{
+    }
+    else
+    {
         sensorVal = 7.5;
     }
     return sensorVal;
