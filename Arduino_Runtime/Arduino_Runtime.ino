@@ -159,6 +159,11 @@ void loop()
     navigate();
 }
 
+/**
+ * @brief Enables the robot
+ * @details Sets all the encoders to the origin and locks rotation,
+ * also sets enabled to true so drive can occur.
+ */
 void enable()
 {
     printToConsole("Robot Enabled: ");
@@ -170,6 +175,10 @@ void enable()
     lockRotation();
 }
 
+/**
+ * @brief Disables the robot.
+ * @details Sets enabled to fale so drive stops.
+ */
 void disable()
 {
     printToConsole("Robot disabled");
@@ -406,6 +415,14 @@ void navigate()
     }
 }
 
+/**
+ * @brief Return to a wall.
+ * @details Returns to the wall in the direction specified by 
+ * the parameter wall.
+ * 
+ * @param wall The wall to return to.,
+ * @return When the wall has been reached.
+ */
 bool returnToWall(int wall)
 {
     switch (wall)
@@ -446,6 +463,13 @@ bool returnToWall(int wall)
     return false;
 }
 
+/**
+ * @brief Prints the displacement to the console.
+ * @details Prints the displacement to the console, correcting
+ * for the position of the candle relative to the robot center.
+ * 
+ * @param candleSide The side that the candle is on.
+ */
 void writeDisplacement(int candleSide)
 {
     float dispx = getDisplacementX();
@@ -475,19 +499,27 @@ void writeDisplacement(int candleSide)
     Serial.println(out);
 }
 
+/**
+ * @brief Switch the navigation state.
+ * @details Switches the nav state, storing the previous.
+ * 
+ * @param navState The state to switch to.
+ */
 void changeNavState(NavigationState navState)
 {
     m_prevNavState = m_navigationState;
     m_navigationState = navState;
 }
 
-void revertNavState()
-{
-    NavigationState tmp = m_navigationState;
-    m_navigationState = m_prevNavState;
-    m_prevNavState = m_navigationState;
-}
-
+/**
+ * @brief Follow a wall on specified side.
+ * @details Follows a wall on a specified side in a specified direction.
+ * 
+ * @param side The side to follow on
+ * @param dir The direction, 1 indicating right.
+ * 
+ * @return When the wall has ended (corner).
+ */
 int followWall(int side, int dir)
 {
     int   driveDir;
@@ -694,26 +726,6 @@ void updateSouthEncoder()
     m_encoderSouth.update(southDirection);
 }
 
-// /**
-//  * @brief Updates the north encoder.
-//  * @details Updates the north encoder with the proper
-//  * direction variable.
-//  */
-// void updateNorthEncoder()
-// {
-//     m_encoderNorth.update(northDirection);
-// }
-
-// /**
-//  * @brief Updates the west encoder.
-//  * @details Updates the west encoder with the proper
-//  * direction variable.
-//  */
-// void updateWestEncoder()
-// {
-//     m_encoderWest.update(westDirection);
-// }
-
 /**
  * @brief Prints to console.
  * @details Prints a message to the control
@@ -770,6 +782,10 @@ void testCode()
 #endif
 }
 
+/**
+ * @brief Returns the robot's current orientation.
+ * @return A float, the orientation of the robot.
+ */
 float getCurrentOrientation()
 {
     return imuRotation;
@@ -800,24 +816,6 @@ void initializeMotors()
 void drive(int degreesFromNorth)
 {
     m_stopped = false;
-#if defined(DRIVE_PID)
-    //Do PID Drive
-    currentHeading = degreesFromNorth;
-
-    int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
-    int motorSpeedEastWest = calcMotorSpeedEastWest(driveSpeed);
-
-    // //Set directions for encoders
-    // if (motorSpeedNorthSouth < 90) southDirection = 1;
-    // else southDirection = 0;
-    // if (motorSpeedEastWest < 90) eastDirection = 0;
-    // else eastDirection = 1;
-
-    northSetpoint = motorSpeedNorthSouth;
-    westSetpoint  = motorSpeedEastWest;
-    southSetpoint = motorSpeedNorthSouth;
-    eastSetpoint  = motorSpeedEastWest;
-#else
     currentHeading = degreesFromNorth;
 
     int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(driveSpeed);
@@ -833,9 +831,6 @@ void drive(int degreesFromNorth)
     southSetpoint = motorSpeedNorthSouth;
     eastSetpoint  = motorSpeedEastWest;
     westSetpoint  = motorSpeedEastWest;
-    // driveMotors(m_north, m_south, motorSpeedNorthSouth);
-    // driveMotors(m_east, m_west, motorSpeedEastWest);
-#endif
 }
 
 /**
@@ -845,26 +840,6 @@ void drive(int degreesFromNorth)
  */
 void updateDrive()
 {
-#if defined(DRIVE_PID)
-    if (!m_stopped)
-    {
-        m_north.write(180 - ((northSpeed < 0) ? northSpeed + 180 : northSpeed));
-        m_south.write(((southSpeed < 0) ? southSpeed + 180 : southSpeed));
-        m_east.write(180 - ((eastSpeed < 0) ? eastSpeed + 180 : eastSpeed));
-        m_west.write(((westSpeed < 0) ? westSpeed + 180 : westSpeed));
-    }
-    else
-    {
-        m_north.write(90);
-        m_west.write(90);
-        m_east.write(90);
-        m_south.write(90);
-    }
-#else
-    if (northSetpoint < 90) southDirection = 1;
-    else southDirection = 0;
-    if (westSetpoint < 90) eastDirection = 0;
-    else eastDirection = 1;
     float headingError = imuRotation - startOrientation;
     int northSetpointAdj = northSetpoint + (int)(headingError * kCompassCorrectionP);
     int westSetpointAdj  = westSetpoint - (int)(headingError * kCompassCorrectionP);
@@ -891,7 +866,6 @@ void updateDrive()
         m_east.write(90);
         m_south.write(90);
     }
-#endif
 }
 
 /**
@@ -964,25 +938,6 @@ void driveMotors(Servo a, Servo b, int motorSpeed)
 
     a.write(180 - motorSpeed);
     b.write(motorSpeed);
-}
-
-void decelerate()
-{
-    for (int i = driveSpeed; i >= 0; i--)
-    {
-        int motorSpeedNorthSouth = calcMotorSpeedNorthSouth(i);
-        int motorSpeedEastWest =  calcMotorSpeedEastWest(i);
-
-        if (motorSpeedNorthSouth < 90) southDirection = 0;
-        else southDirection = 1;
-        if (motorSpeedEastWest < 90) eastDirection = 0;
-        else eastDirection = 1;
-
-        driveMotors(m_north, m_south, motorSpeedNorthSouth);
-        driveMotors(m_east, m_west, motorSpeedEastWest);
-
-        delay(decelerationTime / driveSpeed);
-    }
 }
 
 /**
@@ -1071,24 +1026,37 @@ void setFans(int fan)
     }
 }
 
+/**
+ * @brief Locks robot rotation
+ * @details Locks rotation by setting the starting orientation
+ * to the current IMU rotation.
+ */
 void lockRotation()
 {
     startOrientation = imuRotation;
     // Serial.println(startOrientation);
 }
 
+/**
+ * @brief Get the largest frontier.
+ * 
+ * @return The direction of the largest frontier for movement.
+ */
 int getLargestFrontier()
 {
     return greatestIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(),
                          m_rangeEast.distance(), m_rangeSouth.distance());
 }
 
-int getSmallestFrontier()
-{
-    return leastIndex(4.0, m_rangeNorth.distance(), m_rangeWest.distance(),
-                      m_rangeEast.distance(), m_rangeSouth.distance());
-}
-
+/**
+ * @brief Returns the largest frontier left/right of current wall.
+ * @details Returns the best possible frontier to the left/right of
+ * the current wall.
+ * 
+ * @param currentSide The wall that the robot is trying to switch
+ * to tracking on.
+ * @return An int, 1 indicating right.
+ */
 int getLargestFrontierLeftRight(int currentSide)
 {
     float northDist = m_rangeNorth.distance();
@@ -1259,6 +1227,11 @@ float getFlameHeading()
     return (numerator / denominator) - 90.0;
 }
 
+/**
+ * @brief Returns the side that the candle is visible on.
+ * @details Returns a direction, -1 if not visible.
+ * @return An int, the direction of the flame.
+ */
 int candleVisible()
 {
     int minimumSide = -1;
@@ -1290,6 +1263,12 @@ int candleVisible()
     return minimumSide;
 }
 
+/**
+ * @brief Homes in on candle.
+ * 
+ * @param d The direction to home in.
+ * @return When the homing has completed.
+ */
 bool homeOnCandle(int d)
 {
     static int previousd = d;
@@ -1458,74 +1437,32 @@ bool homeOnCandle(int d)
     // return false;
 }
 
+/**
+ * @brief Gets X displacement.
+ * @return The displacement.
+ */
 float getDisplacementX()
 {
     return -((float)m_encoderWest.read() / 360.0) * 2.75 * M_PI;
 }
 
+/**
+ * @brief Gets Y displacement.
+ * @return The displacement.
+ */
 float getDisplacementY()
 {
     return ((float)m_encoderNorth.read() / 360.0) * 2.75 * M_PI;
 }
 
-bool driveDistanceUltrasonic(int dir, float distance)
-{
-    static float initialDist = (dir == 1) ? m_rangeSouth.distance() : (dir == 2) ?
-                               m_rangeEast.distance() : (dir == 3) ?
-                               m_rangeNorth.distance() : m_rangeWest.distance();
-    switch (dir)
-    {
-    case 1:
-        if (abs(m_rangeSouth.distance() - initialDist) >= distance)
-        {
-            stopDrive();
-            return true;
-        }
-        else
-        {
-            drive(0);
-            return false;
-        }
-        break;
-    case 2:
-        if (abs(m_rangeEast.distance() - initialDist) >= distance)
-        {
-            stopDrive();
-            return true;
-        }
-        else
-        {
-            drive(270);
-            return false;
-        }
-        break;
-    case 3:
-        if (abs(m_rangeNorth.distance() - initialDist) >= distance)
-        {
-            stopDrive();
-            return true;
-        }
-        else
-        {
-            drive(180);
-            return false;
-        }
-        break;
-    case 4:
-        if (abs(m_rangeWest.distance() - initialDist) >= distance)
-        {
-            stopDrive();
-            return true;
-        }
-        else
-        {
-            drive(90);
-            return false;
-        }
-        break;
-    }
-}
-
+/**
+ * @brief Drives a distance.
+ * 
+ * @param dir Direction to drive.
+ * @param dTime Length of time to drive for.
+ * 
+ * @return When the drive command has completed.
+ */
 bool driveDistance(int dir, int dTime)
 {
     static long initialTime = millis();
@@ -1608,6 +1545,12 @@ bool driveDistance(int dir, int dTime)
     // }
 }
 
+/**
+ * @brief Get the Z height of the flame.
+ * 
+ * @param d The flame direction
+ * @return The Z height, in inches.
+ */
 float getFlameHeight(int d)
 {
     float sensorVal;
